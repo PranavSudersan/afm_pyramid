@@ -15,6 +15,7 @@ parameter w_init = 1 //initial wetted height of the pyramid
 parameter SA = 17.5 * pi/180 //Side angle of pyramid
 parameter FA = 15 * pi/180 //Front angle of pyramid
 parameter BA = 25 * pi/180 //Back angle of pyramid
+parameter tilt = 0 * pi/180 //tilt pyramid around x-axis
 
 
 parameter TENS = 1 //suface tension of liquid
@@ -26,7 +27,7 @@ gravity_constant 0  // start with gravity off
 keep_macros
 
 //rotate display
-parameter alpha = 15*pi/180 //rotate view around z-axis
+parameter alpha = 0*pi/180 //rotate view around z-axis
 parameter beta = 10*pi/180 //rotate view around y-axis
 parameter gamma = 0*pi/180 //rotate view around x-axis
 
@@ -37,7 +38,7 @@ sin(alpha)*cos(beta) sin(alpha)*sin(beta)*sin(gamma)+cos(alpha)*cos(gamma) sin(a
 -sin(beta) cos(beta)*sin(gamma) cos(beta)*cos(gamma) -1
 0 0 0 2
 
-
+//surface energy of substrate and pyramid
 #define TENS_s (-TENS*(cos(CA_s)))
 #define TENS_p (-TENS*(cos(CA_p)))
 
@@ -72,35 +73,44 @@ formula: z = 0
 //e1: 0
 //e2: TENS_s * x
 //e3: 0
-
+//(y*cos(tilt)-z*sin(tilt))
+//(y*sin(tilt)+z*cos(tilt))
 constraint 14 // pinning at substrate
 formula: x^2 + y^2 = R_s^2
 
 //pyramid tip plane constraints
 constraint 2 // face 6
-formula: y + (z-height)*tan(FA) = 0
+//formula: y + (z-height)*tan(FA) = 0
+formula: (y*cos(-tilt)-z*sin(-tilt)) + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(FA) = 0
 
 constraint 3 // face 7
-formula: -x + (z-height)*tan(SA) = 0
+//formula: -x + (z-height)*tan(SA) = 0
+formula: -x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA) = 0
 
 constraint 4 // face 8
-formula: -y + (z-height)*tan(BA) = 0
+//formula: -y + (z-height)*tan(BA) = 0
+formula: -(y*cos(-tilt)-z*sin(-tilt)) + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(BA) = 0
 
 constraint 5 // face 9
-formula: x + (z-height)*tan(SA) = 0
+//formula: x + (z-height)*tan(SA) = 0
+formula: x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA) = 0
 
 //keep liquid outside pyramid
 constraint 6 nonpositive // face 1
-formula: y + (z-height)*tan(FA)
+//formula: y + (z-height)*tan(FA)
+formula: (y*cos(-tilt)-z*sin(-tilt)) + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(FA)
 
 constraint 7 nonpositive // face 2
-formula: -x + (z-height)*tan(SA)
+//formula: -x + (z-height)*tan(SA)
+formula: -x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA)
 
 constraint 8 nonpositive // face 3
-formula: -y + (z-height)*tan(BA)
+//formula: -y + (z-height)*tan(BA)
+formula: -(y*cos(-tilt)-z*sin(-tilt)) + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(BA)
 
 constraint 9 nonpositive // face 4
-formula: x + (z-height)*tan(SA)
+//formula: x + (z-height)*tan(SA)
+formula: x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA)
 
 //pyramid tip constraints
 constraint 10 
@@ -121,21 +131,32 @@ define vertex attribute old_coord real[3]
 /* INITIAL SHAPE SPECIFICATION */
 
 vertices
-//liquid
-1 -R_s -R_s 0 constraint 1,13,14 //bottom substrate (include pinning/contact angle constraints)
+//liquid bottom substrate (include pinning/contact angle constraints)
+1 -R_s -R_s 0 constraint 1,13,14
 2 R_s -R_s 0 constraint 1,13,14
 3 R_s R_s 0 constraint 1,13,14
 4 -R_s R_s 0 constraint 1,13,14
-5 -w_init*tan(SA) -w_init*tan(FA) height+w_init constraint 2,5 //pyramid contact line
-6 w_init*tan(SA) -w_init*tan(FA) height+w_init constraint 2,3
-7 w_init*tan(SA) w_init*tan(BA) height+w_init constraint 3,4
-8 -w_init*tan(SA) w_init*tan(BA) height+w_init constraint 4,5
+//5 -w_init*tan(SA) -w_init*tan(FA) height+w_init constraint 2,5 //pyramid contact line
+//6 w_init*tan(SA) -w_init*tan(FA) height+w_init constraint 2,3
+//7 w_init*tan(SA) w_init*tan(BA) height+w_init constraint 3,4
+//8 -w_init*tan(SA) w_init*tan(BA) height+w_init constraint 4,5
+ //pyramid contact line
+5 -w_init*tan(SA) (-w_init*tan(FA))*cos(tilt)-(height+w_init)*sin(tilt) (-w_init*tan(FA))*sin(tilt)+(height+w_init)*cos(tilt)  constraint 2,5
+6 w_init*tan(SA) (-w_init*tan(FA))*cos(tilt)-(height+w_init)*sin(tilt) (-w_init*tan(FA))*sin(tilt)+(height+w_init)*cos(tilt)  constraint 2,3
+7 w_init*tan(SA) (w_init*tan(BA))*cos(tilt)-(height+w_init)*sin(tilt) (w_init*tan(BA))*sin(tilt)+(height+w_init)*cos(tilt)  constraint 3,4
+8 -w_init*tan(SA) (w_init*tan(BA))*cos(tilt)-(height+w_init)*sin(tilt) (w_init*tan(BA))*sin(tilt)+(height+w_init)*cos(tilt)  constraint 4,5
 9 0 0 height constraint 10,11,12
 //pyramid
-10 -w_top*tan(SA) -w_top*tan(FA) height+w_top fixed
-11 w_top*tan(SA) -w_top*tan(FA) height+w_top fixed
-12 w_top*tan(SA) w_top*tan(BA) height+w_top fixed
-13 -w_top*tan(SA) w_top*tan(BA) height+w_top fixed
+//10 -w_top*tan(SA) -w_top*tan(FA) height+w_top fixed
+//11 w_top*tan(SA) -w_top*tan(FA) height+w_top fixed
+//12 w_top*tan(SA) w_top*tan(BA) height+w_top fixed
+//13 -w_top*tan(SA) w_top*tan(BA) height+w_top fixed
+10 -w_top*tan(SA) (-w_top*tan(FA))*cos(tilt)-(height+w_top)*sin(tilt) (-w_top*tan(FA))*sin(tilt)+(height+w_top)*cos(tilt) fixed
+11 w_top*tan(SA) (-w_top*tan(FA))*cos(tilt)-(height+w_top)*sin(tilt) (-w_top*tan(FA))*sin(tilt)+(height+w_top)*cos(tilt) fixed
+12 w_top*tan(SA) (w_top*tan(BA))*cos(tilt)-(height+w_top)*sin(tilt) (w_top*tan(BA))*sin(tilt)+(height+w_top)*cos(tilt) fixed
+13 -w_top*tan(SA) (w_top*tan(BA))*cos(tilt)-(height+w_top)*sin(tilt) (w_top*tan(BA))*sin(tilt)+(height+w_top)*cos(tilt) fixed
+
+
 14 0 0 height fixed
 
 edges
