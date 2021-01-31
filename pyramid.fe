@@ -20,10 +20,10 @@ parameter tilt = 0 * pi/180 //tilt pyramid around x-axis
 
 parameter TENS = 1 //suface tension of liquid
 parameter CA_s = 16 * pi/180 //liquid contact angle with surface (REMOVE PINNED CONTACT ONSTRAINT 14)
-parameter CA_p = 16 * pi/180 //liquid contact angle with pyramid tip
+parameter CA_p = 40 * pi/180 //liquid contact angle with pyramid tip
 
 gravity_constant 0  // start with gravity off
-
+scale_limit 0.1
 keep_macros
 
 //rotate display
@@ -82,18 +82,50 @@ formula: x^2 + y^2 = R_s^2
 constraint 2 // face 6
 //formula: y + (z-height)*tan(FA) = 0
 formula: (y*cos(-tilt)-z*sin(-tilt)) + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(FA) = 0
+//energy:
+//e1: 0
+//e2: TENS_p*x/sin(FA)
+//e3: -TENS_p*x/cos(FA)
+content:
+c1: height*y - ((y^2)/(2*tan(FA)))
+c2: 0
+c3: 0
 
 constraint 3 // face 7
 //formula: -x + (z-height)*tan(SA) = 0
 formula: -x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA) = 0
+//energy:
+//e1: -TENS_p*y/sin(SA)
+//e2: 0
+//e3: -TENS_p*y/cos(SA)
+content:
+c1: 0
+c2: -height*x - ((x^2)/(2*tan(SA)))
+c3: 0
 
 constraint 4 // face 8
 //formula: -y + (z-height)*tan(BA) = 0
 formula: -(y*cos(-tilt)-z*sin(-tilt)) + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(BA) = 0
+//energy:
+//e1: 0
+//e2: TENS_p*x/sin(BA)
+//e3: TENS_p*x/cos(BA)
+content:
+c1: height*y + ((y^2)/(2*tan(BA)))
+c2: 0
+c3: 0
 
 constraint 5 // face 9
 //formula: x + (z-height)*tan(SA) = 0
 formula: x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA) = 0
+//energy:
+//e1: -TENS_p*y/sin(SA)
+//e2: 0
+//e3: TENS_p*y/cos(SA)
+content:
+c1: 0
+c2: -height*x + ((x^2)/(2*tan(SA)))
+c3: 0
 
 //keep liquid outside pyramid
 constraint 6 nonpositive // face 1
@@ -122,8 +154,27 @@ formula: y = 0
 constraint 12 
 formula: z = height
 
-constraint 13 nonnegative //keep liquid above substrate
+//keep liquid above substrate
+constraint 13 nonnegative 
 formula: z
+
+//keep liquid between faces
+constraint 15 nonnegative // face 6
+//formula: y + (z-height)*tan(FA)
+formula: (y*cos(-tilt)-z*sin(-tilt)) + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(FA)
+
+constraint 16 nonnegative // face 7
+//formula: -x + (z-height)*tan(SA)
+formula: -x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA)
+
+constraint 17 nonnegative // face 8
+//formula: -y + (z-height)*tan(BA)
+formula: -(y*cos(-tilt)-z*sin(-tilt)) + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(BA)
+
+constraint 18 nonnegative // face 9
+//formula: x + (z-height)*tan(SA)
+formula: x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA)
+
 
 // for restoring after perturbation
 define vertex attribute old_coord real[3]
@@ -145,7 +196,7 @@ vertices
 6 w_init*tan(SA) (-w_init*tan(FA))*cos(tilt)-(height+w_init)*sin(tilt) (-w_init*tan(FA))*sin(tilt)+(height+w_init)*cos(tilt)  constraint 2,3
 7 w_init*tan(SA) (w_init*tan(BA))*cos(tilt)-(height+w_init)*sin(tilt) (w_init*tan(BA))*sin(tilt)+(height+w_init)*cos(tilt)  constraint 3,4
 8 -w_init*tan(SA) (w_init*tan(BA))*cos(tilt)-(height+w_init)*sin(tilt) (w_init*tan(BA))*sin(tilt)+(height+w_init)*cos(tilt)  constraint 4,5
-9 0 0 height constraint 10,11,12
+//9 0 0 height constraint 10,11,12
 //pyramid
 //10 -w_top*tan(SA) -w_top*tan(FA) height+w_top fixed
 //11 w_top*tan(SA) -w_top*tan(FA) height+w_top fixed
@@ -155,8 +206,6 @@ vertices
 11 w_top*tan(SA) (-w_top*tan(FA))*cos(tilt)-(height+w_top)*sin(tilt) (-w_top*tan(FA))*sin(tilt)+(height+w_top)*cos(tilt) fixed
 12 w_top*tan(SA) (w_top*tan(BA))*cos(tilt)-(height+w_top)*sin(tilt) (w_top*tan(BA))*sin(tilt)+(height+w_top)*cos(tilt) fixed
 13 -w_top*tan(SA) (w_top*tan(BA))*cos(tilt)-(height+w_top)*sin(tilt) (w_top*tan(BA))*sin(tilt)+(height+w_top)*cos(tilt) fixed
-
-
 14 0 0 height fixed
 
 edges
@@ -165,18 +214,18 @@ edges
 2 2 3 constraint 1,14 lower_length lower_area
 3 3 4 constraint 1,14 lower_length lower_area
 4 4 1 constraint 1,14 lower_length lower_area
-5 5 6 constraint 2 upper_length upper_area //pyramid top contact line
-6 6 7 constraint 3 upper_length upper_area
-7 7 8 constraint 4 upper_length upper_area
-8 8 5 constraint 5 upper_length upper_area
+5 5 6 constraint 2,16,18 upper_length upper_area //pyramid top contact line
+6 6 7 constraint 3,15,17 upper_length upper_area
+7 7 8 constraint 4,16,18 upper_length upper_area
+8 8 5 constraint 5,15,17 upper_length upper_area
 9 1 5 constraint 13//liquid-air interface
 10 2 6 constraint 13
 11 3 7 constraint 13
 12 4 8 constraint 13
-13 9 5 constraint 2,5 //edge of pyramid tip
-14 9 6 constraint 2,3
-15 9 7 constraint 3,4
-16 9 8 constraint 4,5
+//13 9 5 constraint 2,5 //edge of pyramid tip
+//14 9 6 constraint 2,3
+//15 9 7 constraint 3,4
+//16 9 8 constraint 4,5
 //pyramid
 17 10 11 fixed no_refine 
 18 11 12 fixed no_refine 
@@ -189,24 +238,24 @@ edges
 
 faces
 //liquid
-1 1 10 -5 -9 constraint 6 tension TENS color yellow //air-liquid interface
-2 2 11 -6 -10 constraint 7 tension TENS color yellow
-3 3 12 -7 -11 constraint 8 tension TENS color yellow
-4 4 9 -8 -12 constraint 9 tension TENS color yellow
+1 1 10 -5 -9  tension TENS color yellow //air-liquid interface
+2 2 11 -6 -10  tension TENS color yellow
+3 3 12 -7 -11  tension TENS color yellow
+4 4 9 -8 -12  tension TENS color yellow
 //5 -1 -4 -3 -2 tension -0.8  constraint 1 color yellow //contact with substrate
-6 13 5 -14 tension TENS_p constraint 2 color yellow //contact with pyramid tip
-7 14 6 -15 tension TENS_p constraint 3 color yellow
-8 15 7 -16 tension TENS_p constraint 4 color yellow
-9 16 8 -13 tension TENS_p constraint 5 color yellow
+//6 13 5 -14 tension TENS_p constraint 2 color yellow //contact with pyramid tip
+//7 14 6 -15 tension TENS_p constraint 3 color yellow
+//8 15 7 -16 tension TENS_p constraint 4 color yellow
+//9 16 8 -13 tension TENS_p constraint 5 color yellow
 //pyramid
 10 21 17 -22 fixed no_refine tension 0 color red
 11 22 18 -23 fixed no_refine tension 0 color red
 12 23 19 -24 fixed no_refine tension 0 color red
 13 24 20 -21 fixed no_refine tension 0 color red
-14 17 18 19 20 fixed no_refine tension 0 color red
+//14 17 18 19 20 fixed no_refine tension 0 color red
 
 bodies
-    1   1 2 3 4 6 7 8 9 volume 4*pi/3 density 1
+    1   1 2 3 4 volume 4*pi/3 density 1
     
 //----------------------SCRIPT----------------------//
 
