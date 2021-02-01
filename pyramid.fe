@@ -20,7 +20,7 @@ parameter tilt = 0 * pi/180 //tilt pyramid around x-axis
 
 parameter TENS = 1 //suface tension of liquid
 parameter CA_s = 16 * pi/180 //liquid contact angle with surface (REMOVE PINNED CONTACT ONSTRAINT 14)
-parameter CA_p = 16 * pi/180 //liquid contact angle with pyramid tip
+parameter CA_p = 1 * pi/180 //liquid contact angle with pyramid tip
 
 gravity_constant 0  // start with gravity off
 
@@ -228,6 +228,45 @@ compute_angle := {
         pin_angle := (angle_sum/ind);//take average
         print pin_angle*180/pi;
         }
+
+//TODO: check angles
+//compute contact angle of liquid with pyramid
+function real compute_angle_top(real c_num)
+    {
+    angle_sum := 0;
+    ind := 0;
+    foreach edge ee where on_quantity upper_length and on_constraint c_num do
+        {   
+            angle_temp := acos(ee.vertices[1].vertex_normal[3]);
+            if ee.vertices[1].vertex_normal[1]*ee.vertices[1].x > 0 or ee.vertices[1].vertex_normal[2]*ee.vertices[1].y > 0 then 
+            {angle_sum := angle_sum + angle_temp;}
+            else
+            {angle_sum := angle_sum - angle_temp;};
+            ind++;
+        };
+        angle1 := (angle_sum/ind);//take average
+        print angle1*180/pi;
+        
+    angle_sum := 0;
+    ind := 0;
+    foreach facet ff where on_constraint c_num do
+        {   
+            angle_temp := acos(ff.vertices[1].vertex_normal[3]);
+            if ff.vertices[1].vertex_normal[1]*ff.vertices[1].x > 0 or ff.vertices[1].vertex_normal[2]*ff.vertices[1].y > 0 then 
+            {angle_sum := angle_sum + angle_temp;}
+            else
+            {angle_sum := angle_sum - angle_temp;};
+            ind++;
+        };
+        angle2 := (angle_sum/ind);//take average
+        print angle2*180/pi;
+        
+    top_angle := (angle2 - angle1)*180/pi;
+    print top_angle;
+    return top_angle;
+        
+        }
+
 
 //change height
 new_height := height //set new_height and run change_height
