@@ -103,13 +103,13 @@ constraint 2 // face 6
 formula: y + (z-height)*tan(FA) = 0
 //formula: (y*cos(-tilt)-z*sin(-tilt)) + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(FA) = 0
 energy:
-e1: 0
-//e2: TENS_p*(x-((z-height)*tan(SA)))/sin(FA)
-//e3: -TENS_p*(x-((z-height)*tan(SA)))/cos(FA)
+e1: TENS_p*(y+(z/(4*cos(FA))))
+e2: TENS_p*(x+(x/(4*sin(FA))))
+e3: -TENS_p*(x+(x/(4*cos(FA))))
 //energy:
 //e1: 0
-e2: TENS_p*0.5*x/sin(FA)
-e3: -TENS_p*0.5*x/cos(FA)
+//e2: TENS_p*0.5*x/sin(FA)
+//e3: -TENS_p*0.5*x/cos(FA)
 content:
 c1: height*y - ((y^2)/(2*tan(FA)))
 c2: 0
@@ -118,10 +118,10 @@ c3: 0
 constraint 3 // face 7
 formula: -x + (z-height)*tan(SA) = 0
 //formula: -x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA) = 0
-energy:
-e1: -TENS_p*0.5*(y-((z-height)*tan(BA)))/sin(SA)
-e2: -TENS_p*0.5*(y-((z-height)*tan(BA)))/cos(SA)
-e3: 0
+//energy:
+//e1: -TENS_p*0.5*(y-((z-height)*tan(BA)))/sin(SA)
+//e2: -TENS_p*0.5*(y-((z-height)*tan(BA)))/cos(SA)
+//e3: 0
 //energy:
 //e1: -TENS_p*0.5*y/sin(SA)
 //e2: -TENS_p*0.5*y/cos(SA)
@@ -138,10 +138,10 @@ formula: -y + (z-height)*tan(BA) = 0
 //e1: 0
 //e2: TENS_p*(x-(-(z-height)*tan(SA)))/sin(BA)
 //e3: TENS_p*(x-(-(z-height)*tan(SA)))/cos(BA)
-energy:
-e1: 0
-e2: TENS_p*0.5*x/sin(BA)
-e3: TENS_p*0.5*x/cos(BA)
+//energy:
+//e1: 0
+//e2: TENS_p*0.5*x/sin(BA)
+//e3: TENS_p*0.5*x/cos(BA)
 content:
 c1: height*y + ((y^2)/(2*tan(BA)))
 c2: 0
@@ -150,10 +150,10 @@ c3: 0
 constraint 5 // face 9
 formula: x + (z-height)*tan(SA) = 0
 //formula: x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA) = 0
-energy:
-e1: -TENS_p*0.5*(y-(-(z-height)*tan(FA)))/sin(SA)
-e2: 0
-e3: TENS_p*0.5*(y-(-(z-height)*tan(FA)))/cos(SA)
+//energy:
+//e1: -TENS_p*0.5*(y-(-(z-height)*tan(FA)))/sin(SA)
+//e2: 0
+//e3: TENS_p*0.5*(y-(-(z-height)*tan(FA)))/cos(SA)
 //energy:
 //e1: -TENS_p*y/sin(SA)
 //e2: 0
