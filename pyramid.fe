@@ -11,9 +11,9 @@ parameter dh = 0.1
 parameter height = 0.001 // distance of pyramid tip from surface
 parameter R_s = 2.7 //pinned radius at substrate (REMOVE CONTACT ANGLE ENERGY CONSTRAINT 1)
 parameter w_top =  3 //height of dummy pyramid
-parameter w_init = 1 //initial wetted height of the pyramid
-parameter SA = 17.5 * pi/180 //Side angle of pyramid
-parameter FA = 15 * pi/180 //Front angle of pyramid
+parameter w_init = 0.5 //initial wetted height of the pyramid
+parameter SA = 25 * pi/180 //Side angle of pyramid 17.5
+parameter FA = 25 * pi/180 //Front angle of pyramid 15
 parameter BA = 25 * pi/180 //Back angle of pyramid
 parameter tilt = 0 * pi/180 //tilt pyramid around x-axis
 
@@ -102,14 +102,14 @@ formula: x^2 + y^2 = R_s^2
 constraint 2 // face 6
 formula: y + (z-height)*tan(FA) = 0
 //formula: (y*cos(-tilt)-z*sin(-tilt)) + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(FA) = 0
-//energy:
-//e1: 0
-//e2: TENS_p*(x-((z-height)*tan(SA)))/sin(FA)
-//e3: -TENS_p*(x-((z-height)*tan(SA)))/cos(FA)
 energy:
 e1: 0
-e2: TENS_p*x/sin(FA)
-e3: -TENS_p*x/cos(FA)
+//e2: TENS_p*(x-((z-height)*tan(SA)))/sin(FA)
+//e3: -TENS_p*(x-((z-height)*tan(SA)))/cos(FA)
+//energy:
+//e1: 0
+e2: TENS_p*0.5*x/sin(FA)
+e3: -TENS_p*0.5*x/cos(FA)
 content:
 c1: height*y - ((y^2)/(2*tan(FA)))
 c2: 0
@@ -118,14 +118,14 @@ c3: 0
 constraint 3 // face 7
 formula: -x + (z-height)*tan(SA) = 0
 //formula: -x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA) = 0
-//energy:
-//e1: -TENS_p*(y-((z-height)*tan(BA)))/sin(SA)
-//e2: -TENS_p*(y-((z-height)*tan(BA)))/cos(SA)
-//e3: 0
 energy:
-e1: -TENS_p*y/sin(SA)
-e2: -TENS_p*y/cos(SA)
+e1: -TENS_p*0.5*(y-((z-height)*tan(BA)))/sin(SA)
+e2: -TENS_p*0.5*(y-((z-height)*tan(BA)))/cos(SA)
 e3: 0
+//energy:
+//e1: -TENS_p*0.5*y/sin(SA)
+//e2: -TENS_p*0.5*y/cos(SA)
+//e3: 0
 content:
 c1: 0
 c2: -height*x - ((x^2)/(2*tan(SA)))
@@ -140,8 +140,8 @@ formula: -y + (z-height)*tan(BA) = 0
 //e3: TENS_p*(x-(-(z-height)*tan(SA)))/cos(BA)
 energy:
 e1: 0
-e2: TENS_p*x/sin(BA)
-e3: TENS_p*x/cos(BA)
+e2: TENS_p*0.5*x/sin(BA)
+e3: TENS_p*0.5*x/cos(BA)
 content:
 c1: height*y + ((y^2)/(2*tan(BA)))
 c2: 0
@@ -150,14 +150,14 @@ c3: 0
 constraint 5 // face 9
 formula: x + (z-height)*tan(SA) = 0
 //formula: x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA) = 0
-//energy:
-//e1: -TENS_p*(y-(-(z-height)*tan(FA)))/sin(SA)
-//e2: 0
-//e3: TENS_p*(y-(-(z-height)*tan(FA)))/cos(SA)
 energy:
-e1: -TENS_p*y/sin(SA)
+e1: -TENS_p*0.5*(y-(-(z-height)*tan(FA)))/sin(SA)
 e2: 0
-e3: TENS_p*y/cos(SA)
+e3: TENS_p*0.5*(y-(-(z-height)*tan(FA)))/cos(SA)
+//energy:
+//e1: -TENS_p*y/sin(SA)
+//e2: 0
+//e3: TENS_p*y/cos(SA)
 content:
 c1: 0
 c2: -height*x + ((x^2)/(2*tan(SA)))
