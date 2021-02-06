@@ -9,9 +9,9 @@ parameter height_end = 0.701
 parameter dh = 0.1
 
 parameter height = 0.001 // distance of pyramid tip from surface
-parameter R_s = 1.5 //pinned radius at substrate (REMOVE CONTACT ANGLE ENERGY CONSTRAINT 1)
+parameter R_s = 2.7 //pinned radius at substrate (REMOVE CONTACT ANGLE ENERGY CONSTRAINT 1)
 parameter w_top =  3 //height of dummy pyramid
-parameter w_init = 0.5 //initial wetted height of the pyramid
+parameter w_init = 1 //initial wetted height of the pyramid
 parameter SA = 25 * pi/180 //Side angle of pyramid 17.5
 parameter FA = 25 * pi/180 //Front angle of pyramid 15
 parameter BA = 25 * pi/180 //Back angle of pyramid
@@ -20,7 +20,7 @@ parameter tilt = 0 * pi/180 //tilt pyramid around x-axis
 
 parameter TENS = 1 //suface tension of liquid
 parameter CA_s = 16 * pi/180 //liquid contact angle with surface (REMOVE PINNED CONTACT ONSTRAINT 14)
-parameter CA_p = 1 * pi/180 //liquid contact angle with pyramid tip
+parameter CA_p = 16 * pi/180 //liquid contact angle with pyramid tip
 
 gravity_constant 0  // start with gravity off
 //scale_limit 0.1
@@ -90,10 +90,10 @@ x3: p1 + height
 
 constraint 1   // substrate face
 formula: z = 0
-energy: //uncomment to consider oontact angle
-e1: 0
-e2: TENS_s * x
-e3: 0
+//energy: //uncomment to consider oontact angle
+//e1: 0
+//e2: TENS_s * x
+//e3: 0
 
 constraint 14 // pinning at substrate
 formula: x^2 + y^2 = R_s^2
@@ -109,7 +109,7 @@ constraint 2 // face 6
 formula: y + (z-height)*tan(FA) = 0
 //formula: (y*cos(-tilt)-z*sin(-tilt)) + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(FA) = 0
 energy:
-e1: TENS_p*(1/(2*cos(FA)))*(z-height+(x/tan(SA)))
+e1: TENS_p*(1/(1*cos(FA)))*(z-height+(x/tan(SA)))
 e2: 0
 e3: 0
 //energy:
@@ -117,7 +117,8 @@ e3: 0
 //e2: TENS_p*0.5*x/sin(FA)
 //e3: -TENS_p*0.5*x/cos(FA)
 content:
-c1: height*y - ((y^2)/(2*tan(FA)))
+//c1: height*y - ((y^2)/(2*tan(FA)))
+c1: (-z*(tan(FA)))*(z-height+(x/tan(SA)))
 c2: 0
 c3: 0
 
@@ -125,7 +126,7 @@ constraint 25 // face 6
 formula: y + (z-height)*tan(FA) = 0
 //formula: (y*cos(-tilt)-z*sin(-tilt)) + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(FA) = 0
 energy:
-e1: TENS_p*(1/(2*cos(FA)))*(z-height-(x/tan(SA)))
+e1: TENS_p*(1/(1*cos(FA)))*(z-height-(x/tan(SA)))
 e2: 0
 e3: 0
 //energy:
@@ -133,7 +134,8 @@ e3: 0
 //e2: TENS_p*0.5*x/sin(FA)
 //e3: -TENS_p*0.5*x/cos(FA)
 content:
-c1: height*y - ((y^2)/(2*tan(FA)))
+//c1: height*y - ((y^2)/(2*tan(FA)))
+c1: (-z*(tan(FA)))*(z-height-(x/tan(SA)))
 c2: 0
 c3: 0
 
@@ -142,7 +144,7 @@ formula: -x + (z-height)*tan(SA) = 0
 //formula: -x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA) = 0
 energy:
 e1: 0
-e2: TENS_p*(1/(2*cos(SA)))*(z-height+(y/tan(FA)))
+e2: TENS_p*(1/(1*cos(SA)))*(z-height+(y/tan(FA)))
 e3: 0
 //energy:
 //e1: -TENS_p*0.5*y/sin(SA)
@@ -150,7 +152,8 @@ e3: 0
 //e3: 0
 content:
 c1: 0
-c2: -height*x - ((x^2)/(2*tan(SA)))
+//c2: -height*x - ((x^2)/(2*tan(SA)))
+c2: (-z*(tan(SA)))*(z-height+(y/tan(FA)))
 c3: 0
 
 constraint 35 // face 7
@@ -158,7 +161,7 @@ formula: -x + (z-height)*tan(SA) = 0
 //formula: -x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA) = 0
 energy:
 e1: 0
-e2: TENS_p*(1/(2*cos(SA)))*(z-height-(y/tan(BA)))
+e2: TENS_p*(1/(1*cos(SA)))*(z-height-(y/tan(BA)))
 e3: 0
 //energy:
 //e1: -TENS_p*0.5*y/sin(SA)
@@ -166,14 +169,15 @@ e3: 0
 //e3: 0
 content:
 c1: 0
-c2: -height*x - ((x^2)/(2*tan(SA)))
+//c2: -height*x - ((x^2)/(2*tan(SA)))
+c2: (-z*(tan(SA)))*(z-height-(y/tan(BA)))
 c3: 0
 
 constraint 4 // face 8
 formula: -y + (z-height)*tan(BA) = 0
 //formula: -(y*cos(-tilt)-z*sin(-tilt)) + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(BA) = 0
 energy:
-e1: -TENS_p*(1/(2*cos(BA)))*(z-height-(x/tan(SA)))
+e1: -TENS_p*(1/(1*cos(BA)))*(z-height-(x/tan(SA)))
 e2: 0
 e3: 0
 //energy:
@@ -181,7 +185,8 @@ e3: 0
 //e2: TENS_p*0.5*x/sin(BA)
 //e3: TENS_p*0.5*x/cos(BA)
 content:
-c1: height*y + ((y^2)/(2*tan(BA)))
+//c1: height*y + ((y^2)/(2*tan(BA)))
+c1: (z*(tan(BA)))*(z-height-(x/tan(SA)))
 c2: 0
 c3: 0
 
@@ -189,7 +194,7 @@ constraint 45 // face 8
 formula: -y + (z-height)*tan(BA) = 0
 //formula: -(y*cos(-tilt)-z*sin(-tilt)) + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(BA) = 0
 energy:
-e1: -TENS_p*(1/(2*cos(BA)))*(z-height+(x/tan(SA)))
+e1: -TENS_p*(1/(1*cos(BA)))*(z-height+(x/tan(SA)))
 e2: 0
 e3: 0
 //energy:
@@ -197,7 +202,8 @@ e3: 0
 //e2: TENS_p*0.5*x/sin(BA)
 //e3: TENS_p*0.5*x/cos(BA)
 content:
-c1: height*y + ((y^2)/(2*tan(BA)))
+//c1: height*y + ((y^2)/(2*tan(BA)))
+c1: (z*(tan(BA)))*(z-height+(x/tan(SA)))
 c2: 0
 c3: 0
 
@@ -206,7 +212,7 @@ formula: x + (z-height)*tan(SA) = 0
 //formula: x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA) = 0
 energy:
 e1: 0
-e2: -TENS_p*(1/(2*cos(SA)))*(z-height-(y/tan(BA)))
+e2: -TENS_p*(1/(1*cos(SA)))*(z-height-(y/tan(BA)))
 e3: 0
 //energy:
 //e1: -TENS_p*y/sin(SA)
@@ -214,7 +220,8 @@ e3: 0
 //e3: TENS_p*y/cos(SA)
 content:
 c1: 0
-c2: -height*x + ((x^2)/(2*tan(SA)))
+//c2: -height*x + ((x^2)/(2*tan(SA)))
+c2: (z*(tan(SA)))*(z-height-(y/tan(BA)))
 c3: 0
 
 constraint 55 // face 9
@@ -222,7 +229,7 @@ formula: x + (z-height)*tan(SA) = 0
 //formula: x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA) = 0
 energy:
 e1: 0
-e2: -TENS_p*(1/(2*cos(SA)))*(z-height+(y/tan(FA)))
+e2: -TENS_p*(1/(1*cos(SA)))*(z-height+(y/tan(FA)))
 e3: 0
 //energy:
 //e1: -TENS_p*y/sin(SA)
@@ -230,7 +237,8 @@ e3: 0
 //e3: TENS_p*y/cos(SA)
 content:
 c1: 0
-c2: -height*x + ((x^2)/(2*tan(SA)))
+//c2: -height*x + ((x^2)/(2*tan(SA)))
+c2: (z*(tan(SA)))*(z-height+(y/tan(FA)))
 c3: 0
 
 //keep liquid outside pyramid
@@ -300,10 +308,10 @@ define vertex attribute old_coord real[3]
 
 vertices
 //liquid bottom substrate (include pinning/contact angle constraints)
-1 -R_s -R_s 0 constraint 1,13
-2 R_s -R_s 0 constraint 1,13
-3 R_s R_s 0 constraint 1,13
-4 -R_s R_s 0 constraint 1,13
+1 -R_s -R_s 0 constraint 1,13,14
+2 R_s -R_s 0 constraint 1,13,14
+3 R_s R_s 0 constraint 1,13,14
+4 -R_s R_s 0 constraint 1,13,14
 //5 -w_init*tan(SA) -w_init*tan(FA) height+w_init constraint 2,5 //pyramid contact line
 //6 w_init*tan(SA) -w_init*tan(FA) height+w_init constraint 2,3
 //7 w_init*tan(SA) w_init*tan(BA) height+w_init constraint 3,4
@@ -335,10 +343,10 @@ vertices
 
 edges
 //liquid
-1 1 2 constraint 1 lower_length lower_area //bottom substrate (include pinning/contact angle constraints)
-2 2 3 constraint 1 lower_length lower_area
-3 3 4 constraint 1 lower_length lower_area
-4 4 1 constraint 1 lower_length lower_area
+1 1 2 constraint 1,14 lower_length lower_area //bottom substrate (include pinning/contact angle constraints)
+2 2 3 constraint 1,14 lower_length lower_area
+3 3 4 constraint 1,14 lower_length lower_area
+4 4 1 constraint 1,14 lower_length lower_area
 5 5 55 constraint 2,16,18 upper_length upper_area //pyramid top contact line
 55 55 6 constraint 25,16,18 upper_length upper_area
 6 6 65 constraint 3,15,17 upper_length upper_area
