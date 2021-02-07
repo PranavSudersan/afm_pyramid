@@ -8,19 +8,19 @@ parameter height_start = 0.001
 parameter height_end = 0.701
 parameter dh = 0.1
 
-parameter height = 0.001 // distance of pyramid tip from surface
-parameter R_s = 2.7 //pinned radius at substrate (REMOVE CONTACT ANGLE ENERGY CONSTRAINT 1)
+parameter height = 0 // distance of pyramid tip from surface
+parameter Rs = 2^0.5 //pinned radius at substrate (REMOVE CONTACT ANGLE ENERGY CONSTRAINT 1)
 parameter w_top =  3 //height of dummy pyramid
 parameter w_init = 1 //initial wetted height of the pyramid
-parameter SA = 25 * pi/180 //Side angle of pyramid 17.5
-parameter FA = 25 * pi/180 //Front angle of pyramid 15
-parameter BA = 25 * pi/180 //Back angle of pyramid
+parameter SA = 45 * pi/180 //Side angle of pyramid 17.5
+parameter FA = 45 * pi/180 //Front angle of pyramid 15
+parameter BA = 45 * pi/180 //Back angle of pyramid 25
 parameter tilt = 0 * pi/180 //tilt pyramid around x-axis
 
 
 parameter TENS = 1 //suface tension of liquid
-parameter CA_s = 16 * pi/180 //liquid contact angle with surface (REMOVE PINNED CONTACT ONSTRAINT 14)
-parameter CA_p = 16 * pi/180 //liquid contact angle with pyramid tip
+parameter CA_s = 30 * pi/180 //liquid contact angle with surface (REMOVE PINNED CONTACT ONSTRAINT 14)
+parameter CA_p = 1 * pi/180 //liquid contact angle with pyramid tip
 
 gravity_constant 0  // start with gravity off
 //scale_limit 0.1
@@ -64,27 +64,27 @@ q3: 0
 
 //quantity mean_c info_only method mean_curvature_integral  // mean curvature
 
-/* BOUNDARIES */
-
-boundary 1 parameters 1 // edge 13
-x1: -p1 * tan(SA)
-x2: -p1 * tan(FA)
-x3: p1 + height
-
-boundary 2 parameters 1 // edge 14
-x1: p1 * tan(SA)
-x2: -p1 * tan(FA)
-x3: p1 + height
-
-boundary 3 parameters 1 // edge 15
-x1: p1 * tan(SA)
-x2: p1 * tan(BA)
-x3: p1 + height
-
-boundary 4 parameters 1 // edge 16
-x1: -p1 * tan(SA)
-x2: p1 * tan(BA)
-x3: p1 + height
+///* BOUNDARIES */
+//
+//boundary 1 parameters 1 // edge 13
+//x1: -p1 * tan(SA)
+//x2: -p1 * tan(FA)
+//x3: p1 + height
+//
+//boundary 2 parameters 1 // edge 14
+//x1: p1 * tan(SA)
+//x2: -p1 * tan(FA)
+//x3: p1 + height
+//
+//boundary 3 parameters 1 // edge 15
+//x1: p1 * tan(SA)
+//x2: p1 * tan(BA)
+//x3: p1 + height
+//
+//boundary 4 parameters 1 // edge 16
+//x1: -p1 * tan(SA)
+//x2: p1 * tan(BA)
+//x3: p1 + height
 
 /* CONSTRAINTS */
 
@@ -95,19 +95,20 @@ formula: z = 0
 //e2: TENS_s * x
 //e3: 0
 
-constraint 14 // pinning at substrate
-formula: x^2 + y^2 = R_s^2
+constraint 14 convex// pinning at substrate
+formula: x^2 + y^2 = Rs^2
 
-constraint 26 // pinning at substrate
+// fix edge center vertex at pyramid
+constraint 26
 formula: x = 0
 
-constraint 36 // pinning at substrate
+constraint 36
 formula: y = 0
 
 //pyramid tip plane constraints
 constraint 2 // face 6
-formula: y + (z-height)*tan(FA) = 0
-//formula: (y*cos(-tilt)-z*sin(-tilt)) + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(FA) = 0
+//formula: y + (z-height)*tan(FA) = 0
+formula: (y*cos(-tilt)-z*sin(-tilt)) + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(FA) = 0
 energy:
 e1: TENS_p*(1/(1*cos(FA)))*(z-height+(x/tan(SA)))
 e2: 0
@@ -118,13 +119,14 @@ e3: 0
 //e3: -TENS_p*0.5*x/cos(FA)
 content:
 //c1: height*y - ((y^2)/(2*tan(FA)))
-c1: (-z*(tan(FA)))*(z-height+(x/tan(SA)))
+//c1: (-z*(tan(FA)))*(z-height+(x/tan(SA)))
+c1: -(0.5*(tan(FA)))*((z^2)-(height-(x/tan(SA))^2))
 c2: 0
 c3: 0
 
 constraint 25 // face 6
-formula: y + (z-height)*tan(FA) = 0
-//formula: (y*cos(-tilt)-z*sin(-tilt)) + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(FA) = 0
+//formula: y + (z-height)*tan(FA) = 0
+formula: (y*cos(-tilt)-z*sin(-tilt)) + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(FA) = 0
 energy:
 e1: TENS_p*(1/(1*cos(FA)))*(z-height-(x/tan(SA)))
 e2: 0
@@ -135,13 +137,14 @@ e3: 0
 //e3: -TENS_p*0.5*x/cos(FA)
 content:
 //c1: height*y - ((y^2)/(2*tan(FA)))
-c1: (-z*(tan(FA)))*(z-height-(x/tan(SA)))
+//c1: (-z*(tan(FA)))*(z-height-(x/tan(SA)))
+c1: -(0.5*(tan(FA)))*((z^2)-(height+(x/tan(SA))^2))
 c2: 0
 c3: 0
 
 constraint 3 // face 7
-formula: -x + (z-height)*tan(SA) = 0
-//formula: -x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA) = 0
+//formula: -x + (z-height)*tan(SA) = 0
+formula: -x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA) = 0
 energy:
 e1: 0
 e2: TENS_p*(1/(1*cos(SA)))*(z-height+(y/tan(FA)))
@@ -153,12 +156,13 @@ e3: 0
 content:
 c1: 0
 //c2: -height*x - ((x^2)/(2*tan(SA)))
-c2: (-z*(tan(SA)))*(z-height+(y/tan(FA)))
+//c2: (-z*(tan(SA)))*(z-height+(y/tan(FA)))
+c2: -(0.5*(tan(SA)))*((z^2)-(height-(y/tan(FA))^2))
 c3: 0
 
 constraint 35 // face 7
-formula: -x + (z-height)*tan(SA) = 0
-//formula: -x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA) = 0
+//formula: -x + (z-height)*tan(SA) = 0
+formula: -x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA) = 0
 energy:
 e1: 0
 e2: TENS_p*(1/(1*cos(SA)))*(z-height-(y/tan(BA)))
@@ -170,12 +174,13 @@ e3: 0
 content:
 c1: 0
 //c2: -height*x - ((x^2)/(2*tan(SA)))
-c2: (-z*(tan(SA)))*(z-height-(y/tan(BA)))
+//c2: (-z*(tan(SA)))*(z-height-(y/tan(BA)))
+c2: -(0.5*(tan(SA)))*((z^2)-(height+(y/tan(BA))^2))
 c3: 0
 
 constraint 4 // face 8
-formula: -y + (z-height)*tan(BA) = 0
-//formula: -(y*cos(-tilt)-z*sin(-tilt)) + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(BA) = 0
+//formula: -y + (z-height)*tan(BA) = 0
+formula: -(y*cos(-tilt)-z*sin(-tilt)) + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(BA) = 0
 energy:
 e1: -TENS_p*(1/(1*cos(BA)))*(z-height-(x/tan(SA)))
 e2: 0
@@ -186,13 +191,14 @@ e3: 0
 //e3: TENS_p*0.5*x/cos(BA)
 content:
 //c1: height*y + ((y^2)/(2*tan(BA)))
-c1: (z*(tan(BA)))*(z-height-(x/tan(SA)))
+//c1: (z*(tan(BA)))*(z-height-(x/tan(SA)))
+c1: (0.5*(tan(BA)))*((z^2)-(height+(x/tan(SA))^2))
 c2: 0
 c3: 0
 
 constraint 45 // face 8
-formula: -y + (z-height)*tan(BA) = 0
-//formula: -(y*cos(-tilt)-z*sin(-tilt)) + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(BA) = 0
+//formula: -y + (z-height)*tan(BA) = 0
+formula: -(y*cos(-tilt)-z*sin(-tilt)) + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(BA) = 0
 energy:
 e1: -TENS_p*(1/(1*cos(BA)))*(z-height+(x/tan(SA)))
 e2: 0
@@ -203,13 +209,14 @@ e3: 0
 //e3: TENS_p*0.5*x/cos(BA)
 content:
 //c1: height*y + ((y^2)/(2*tan(BA)))
-c1: (z*(tan(BA)))*(z-height+(x/tan(SA)))
+//c1: (z*(tan(BA)))*(z-height+(x/tan(SA)))
+c1: (0.5*(tan(BA)))*((z^2)-(height-(x/tan(SA))^2))
 c2: 0
 c3: 0
 
 constraint 5 // face 9
-formula: x + (z-height)*tan(SA) = 0
-//formula: x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA) = 0
+//formula: x + (z-height)*tan(SA) = 0
+formula: x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA) = 0
 energy:
 e1: 0
 e2: -TENS_p*(1/(1*cos(SA)))*(z-height-(y/tan(BA)))
@@ -221,12 +228,13 @@ e3: 0
 content:
 c1: 0
 //c2: -height*x + ((x^2)/(2*tan(SA)))
-c2: (z*(tan(SA)))*(z-height-(y/tan(BA)))
+//c2: (z*(tan(SA)))*(z-height-(y/tan(BA)))
+c2: (0.5*(tan(SA)))*((z^2)-(height+(y/tan(BA))^2))
 c3: 0
 
 constraint 55 // face 9
-formula: x + (z-height)*tan(SA) = 0
-//formula: x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA) = 0
+//formula: x + (z-height)*tan(SA) = 0
+formula: x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA) = 0
 energy:
 e1: 0
 e2: -TENS_p*(1/(1*cos(SA)))*(z-height+(y/tan(FA)))
@@ -238,7 +246,8 @@ e3: 0
 content:
 c1: 0
 //c2: -height*x + ((x^2)/(2*tan(SA)))
-c2: (z*(tan(SA)))*(z-height+(y/tan(FA)))
+//c2: (z*(tan(SA)))*(z-height+(y/tan(FA)))
+c2: (0.5*(tan(SA)))*((z^2)-(height-(y/tan(FA))^2))
 c3: 0
 
 //keep liquid outside pyramid
@@ -257,6 +266,25 @@ formula: -(y*cos(-tilt)-z*sin(-tilt)) + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan
 constraint 9 nonpositive // face 4
 //formula: x + (z-height)*tan(SA)
 formula: x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA)
+
+
+//keep centers on pyramid
+constraint 27 // face 6
+//formula: y + (z-height)*tan(FA)
+formula: (y*cos(-tilt)-z*sin(-tilt)) + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(FA) = 0
+
+constraint 37 // face 7
+//formula: -x + (z-height)*tan(SA)
+formula: -x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA) = 0
+
+constraint 47 // face 8
+//formula: -y + (z-height)*tan(BA)
+formula: -(y*cos(-tilt)-z*sin(-tilt)) + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(BA) = 0
+
+constraint 57 // face 9
+//formula: x + (z-height)*tan(SA)
+formula: x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA) = 0
+
 
 //pyramid tip constraints
 constraint 10 
@@ -289,17 +317,17 @@ constraint 18 nonnegative // face 9
 //formula: x + (z-height)*tan(SA)
 formula: x + ((y*sin(-tilt)+z*cos(-tilt))-height)*tan(SA)
 
-constraint 19 // edge 13
-formula: x + y + (tan(SA)+tan(FA))*(z-height) = 0
-
-constraint 20 // edge 14
-formula: x + y + (tan(FA)-tan(SA))*(z-height) = 0
-
-constraint 21 // edge 15
-formula: x + y - (tan(SA)+tan(BA))*(z-height) = 0
-
-constraint 22 // edge 16
-formula: x + y + (tan(SA)-tan(BA))*(z-height) = 0
+//constraint 19 // edge 13
+//formula: x + y + (tan(SA)+tan(FA))*(z-height) = 0
+//
+//constraint 20 // edge 14
+//formula: x + y + (tan(FA)-tan(SA))*(z-height) = 0
+//
+//constraint 21 // edge 15
+//formula: x + y - (tan(SA)+tan(BA))*(z-height) = 0
+//
+//constraint 22 // edge 16
+//formula: x + y + (tan(SA)-tan(BA))*(z-height) = 0
 
 // for restoring after perturbation
 define vertex attribute old_coord real[3]
@@ -308,10 +336,10 @@ define vertex attribute old_coord real[3]
 
 vertices
 //liquid bottom substrate (include pinning/contact angle constraints)
-1 -R_s -R_s 0 constraint 1,13,14
-2 R_s -R_s 0 constraint 1,13,14
-3 R_s R_s 0 constraint 1,13,14
-4 -R_s R_s 0 constraint 1,13,14
+1 -Rs -Rs 0 constraint 1,13,14
+2 Rs -Rs 0 constraint 1,13,14
+3 Rs Rs 0 constraint 1,13,14
+4 -Rs Rs 0 constraint 1,13,14
 //5 -w_init*tan(SA) -w_init*tan(FA) height+w_init constraint 2,5 //pyramid contact line
 //6 w_init*tan(SA) -w_init*tan(FA) height+w_init constraint 2,3
 //7 w_init*tan(SA) w_init*tan(BA) height+w_init constraint 3,4
@@ -321,14 +349,14 @@ vertices
 //7 w_init boundary 3
 //8 w_init boundary 4
  //pyramid contact line
- 5 -w_init*tan(SA) (-w_init*tan(FA))*cos(tilt)-(height+w_init)*sin(tilt) (-w_init*tan(FA))*sin(tilt)+(height+w_init)*cos(tilt)  constraint 2,55
- 55 0 (-w_init*tan(FA))*cos(tilt)-(height+w_init)*sin(tilt) (-w_init*tan(FA))*sin(tilt)+(height+w_init)*cos(tilt)  constraint 2, 25, 26
- 6 w_init*tan(SA) (-w_init*tan(FA))*cos(tilt)-(height+w_init)*sin(tilt) (-w_init*tan(FA))*sin(tilt)+(height+w_init)*cos(tilt)  constraint 25,3
- 65 w_init*tan(SA) -(height+w_init)*sin(tilt) (w_init*tan(BA))*sin(tilt)+(height+w_init)*cos(tilt)  constraint 3,35,36
- 7 w_init*tan(SA) (w_init*tan(BA))*cos(tilt)-(height+w_init)*sin(tilt) (w_init*tan(BA))*sin(tilt)+(height+w_init)*cos(tilt)  constraint 35,4
- 75 0 (w_init*tan(BA))*cos(tilt)-(height+w_init)*sin(tilt) (w_init*tan(BA))*sin(tilt)+(height+w_init)*cos(tilt)  constraint 4,45,26
- 8 -w_init*tan(SA) (w_init*tan(BA))*cos(tilt)-(height+w_init)*sin(tilt) (w_init*tan(BA))*sin(tilt)+(height+w_init)*cos(tilt)  constraint 45,5
- 85 -w_init*tan(SA) -(height+w_init)*sin(tilt) (w_init*tan(BA))*sin(tilt)+(height+w_init)*cos(tilt)  constraint 5,55,36
+ 5 -w_init*tan(SA) (-w_init*tan(FA))*cos(tilt)-(height+w_init)*sin(tilt) (-w_init*tan(FA))*sin(tilt)+(height+w_init)*cos(tilt)  constraint 57,27
+ 55 0 (-w_init*tan(FA))*cos(tilt)-(height+w_init)*sin(tilt) (-w_init*tan(FA))*sin(tilt)+(height+w_init)*cos(tilt)  constraint 27,26
+ 6 w_init*tan(SA) (-w_init*tan(FA))*cos(tilt)-(height+w_init)*sin(tilt) (-w_init*tan(FA))*sin(tilt)+(height+w_init)*cos(tilt)  constraint 27,37
+ 65 w_init*tan(SA) -(height+w_init)*sin(tilt) (w_init*tan(BA))*sin(tilt)+(height+w_init)*cos(tilt)  constraint 37,36
+ 7 w_init*tan(SA) (w_init*tan(BA))*cos(tilt)-(height+w_init)*sin(tilt) (w_init*tan(BA))*sin(tilt)+(height+w_init)*cos(tilt)  constraint 37,47
+ 75 0 (w_init*tan(BA))*cos(tilt)-(height+w_init)*sin(tilt) (w_init*tan(BA))*sin(tilt)+(height+w_init)*cos(tilt)  constraint 47,26
+ 8 -w_init*tan(SA) (w_init*tan(BA))*cos(tilt)-(height+w_init)*sin(tilt) (w_init*tan(BA))*sin(tilt)+(height+w_init)*cos(tilt)  constraint 47,57
+ 85 -w_init*tan(SA) -(height+w_init)*sin(tilt) (w_init*tan(BA))*sin(tilt)+(height+w_init)*cos(tilt)  constraint 57,36
  //9 0 0 height constraint 10,11,12
 //pyramid
 //10 -w_top*tan(SA) -w_top*tan(FA) height+w_top fixed
@@ -355,7 +383,7 @@ edges
 75 75 8 constraint 45,16,18 upper_length upper_area
 8 8 85 constraint 5,15,17 upper_length upper_area
 85 85 5 constraint 55,15,17 upper_length upper_area
-9 1 5 constraint 13//liquid-air interface
+9 1 5 constraint 13 //liquid-air interface
 10 2 6 constraint 13
 11 3 7 constraint 13
 12 4 8 constraint 13
@@ -375,10 +403,10 @@ edges
 
 faces
 //liquid
-1 1 10 -55 -5 -9  tension TENS color yellow //air-liquid interface
-2 2 11 -65 -6 -10  tension TENS color yellow
-3 3 12 -75 -7 -11  tension TENS color yellow
-4 4 9 -85 -8 -12  tension TENS color yellow
+1 1 10 -55 -5 -9 constraint 6 tension TENS color yellow //air-liquid interface
+2 2 11 -65 -6 -10 constraint 7 tension TENS color yellow
+3 3 12 -75 -7 -11 constraint 8 tension TENS color yellow
+4 4 9 -85 -8 -12 constraint 9 tension TENS color yellow
 //5 -1 -4 -3 -2 tension -0.8  constraint 1 color yellow //contact with substrate
 //6 13 5 -14 tension TENS_p constraint 2 color yellow //contact with pyramid tip
 //7 14 6 -15 tension TENS_p constraint 3 color yellow
@@ -424,6 +452,11 @@ change_height := { dz := new_height - height; height := new_height;
            
 re := { refine edges where on_constraint 1;}
 
+re_top := { refine edges where on_constraint 2; refine edges where on_constraint 25;
+            refine edges where on_constraint 3; refine edges where on_constraint 35;
+            refine edges where on_constraint 4; refine edges where on_constraint 45;
+            refine edges where on_constraint 5; refine edges where on_constraint 55;}
+
 //refine edge where length > .0048 and not no_refine;
 gogo1 := {re;
     g5; r; g10; r; g20; r; g40; r; u; g100;
@@ -442,6 +475,15 @@ gogo2 := {re; g5;
 gogo3 := {re; g5; 
     {r; u; V; g 10;} 4;
         g100;
+        scale_val := scale;
+        compute_angle;
+        }
+
+
+//better evolve routine
+gogo4 := {re; g5; 
+    {r; u; V; g 20;} 3;
+    u; V; U; g10; U; u; V; g100; U;g200;U;
         scale_val := scale;
         compute_angle;
         }
@@ -488,19 +530,77 @@ compute_force := { save_coords;
             }
 
            
-        //force-distance data        
-curve := {
+//force-distance data        
+//get_fd := {
+//        quiet on;        
+//        printf "Height:\tForce_Eng:\tForce_Calc:\tScale\n";
+//        
+//        num := 1+abs((height_end-height_start)/dh);
+//        if height_end > height_start then {h_step := dh;} else {h_step := -dh;};
+//
+//        // save data
+//        outdir := "C:/Users/adwait/Desktop/Surface Evolver/afm/data/"; //CHECK OUTPUT DIRECTORY
+//        params := "data";
+//        outname := sprintf "%sdata-%s_hi%2.6g_hf%2.6g.txt",outdir,
+//                   params,height_start,height_end;
+//                   printf "Bottom_Angle\tContact_Radius\t"
+//                "Height\tForce\tForce_Calc\t"
+//               "Energy\tArea\tScale\tVolume\tPressure\tBottom_Length\t"
+//               "Top_Length\tBottom_Area\tTop_Area\t"
+//               "Pinning_Angle\n"
+//                >> outname;
+//                //local inx;
+//        inx := 0;
+//        dataline := "";    
+//        while inx < num do
+//        {   
+//            replace_load datafilename;
+//            new_height := height_start+inx*h_step;
+//            change_height;
+//            inx++;
+//            
+//        gogo3; //evolve
+//            //set edge color clear where on_constraint pinned;            
+//
+//            compute_force; //calculate force
+//            
+//            
+//            dataline:= sprintf "%g\t%-#2.3g\t"
+//                            "%-#2.6g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t"
+//                            "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t"
+//                            "%-#20.15g\t%-#20.15g\t%-#20.15g\n", 
+//                            CA_s*180/pi,Rs,
+//                            height,force1,force2,total_energy,total_area,scale_val, body[1].volume,
+//                            body[1].pressure,lower_length.value,upper_length.value,lower_area.value, 
+//                            upper_area.value,pin_angle*180/pi;
+//             /* save data */
+//             printf "%s",dataline >> outname;
+//
+//            /* save dump file */
+//            dump sprintf "%s%s_dump%03u-h%2.6g.dmp",outdir,
+//                        params,inx,height;
+//
+//        };
+//        quiet off;
+//
+//        }
+
+
+//force-contact radius data        
+get_fr := {
+    Rs_start := 2; Rs_end := 3; dr := 0.1;
+    outdir := "C:/Users/adwait/Desktop/Surface Evolver/test/"; //CHECK OUTPUT DIRECTORY
+    
         quiet on;        
         printf "Height:\tForce_Eng:\tForce_Calc:\tScale\n";
-        
-        num := 1+abs((height_end-height_start)/dh);
-        if height_end > height_start then {h_step := dh;} else {h_step := -dh;};
+       
+    num := 1+abs((Rs_end-Rs_start)/dr);
+    if Rs_end > Rs_start then {r_step := dr;} else {r_step := -dr;};
 
-        // save data
-        outdir := "C:/Users/adwait/Desktop/Surface Evolver/afm/data/"; //CHECK OUTPUT DIRECTORY
+        // save data        
         params := "data";
-        outname := sprintf "%sdata-%s_hi%2.6g_hf%2.6g.txt",outdir,
-                   params,height_start,height_end;
+        outname := sprintf "%sdata-%s_Rsi%2.6g_Rsf%2.6g.txt",outdir,
+                    params,Rs_start,Rs_end;
                    printf "Bottom_Angle\tContact_Radius\t"
                 "Height\tForce\tForce_Calc\t"
                "Energy\tArea\tScale\tVolume\tPressure\tBottom_Length\t"
@@ -513,11 +613,11 @@ curve := {
         while inx < num do
         {   
             replace_load datafilename;
-            new_height := height_start+inx*h_step;
-            change_height;
+            Rs := Rs_start+inx*r_step;
+            recalc;
             inx++;
             
-        gogo3; //evolve
+        gogo4; //evolve
             //set edge color clear where on_constraint pinned;            
 
             compute_force; //calculate force
@@ -527,7 +627,7 @@ curve := {
                             "%-#2.6g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t"
                             "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t"
                             "%-#20.15g\t%-#20.15g\t%-#20.15g\n", 
-                            CA_s*180/pi,R_s,
+                            CA_s*180/pi,Rs,
                             height,force1,force2,total_energy,total_area,scale_val, body[1].volume,
                             body[1].pressure,lower_length.value,upper_length.value,lower_area.value, 
                             upper_area.value,pin_angle*180/pi;
@@ -535,11 +635,10 @@ curve := {
              printf "%s",dataline >> outname;
 
             /* save dump file */
-            dump sprintf "%s%s_dump%03u-h%2.6g.dmp",outdir,
-                        params,inx,height;
+            dump sprintf "%s%s_dump%03u-Rs%2.6g.dmp",outdir,
+                        params,inx,Rs;
 
         };
         quiet off;
 
         }
-
