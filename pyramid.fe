@@ -9,26 +9,26 @@ parameter height_end = 0.701
 parameter dh = 0.1
 
 parameter height = 0 // distance of pyramid tip from surface
-parameter Rs = 2^0.5 //pinned radius at substrate (REMOVE CONTACT ANGLE ENERGY CONSTRAINT 1)
-parameter w_top =  3 //height of dummy pyramid
+parameter Rs = 3 //pinned radius at substrate (REMOVE CONTACT ANGLE ENERGY CONSTRAINT 1)
+parameter w_top =  3 //height of dummy pyramid (only for reference)
 parameter w_init = 1 //initial wetted height of the pyramid
-parameter SA = 45 * pi/180 //Side angle of pyramid 17.5
-parameter FA = 45 * pi/180 //Front angle of pyramid 15
-parameter BA = 45 * pi/180 //Back angle of pyramid 25
+parameter SA = 17.5 * pi/180 //Side angle of pyramid 17.5
+parameter FA = 15 * pi/180 //Front angle of pyramid 15
+parameter BA = 25 * pi/180 //Back angle of pyramid 25
 parameter tilt = 0 * pi/180 //tilt pyramid around x-axis
 
 
 parameter TENS = 1 //suface tension of liquid
 parameter CA_s = 30 * pi/180 //liquid contact angle with surface (REMOVE PINNED CONTACT ONSTRAINT 14)
-parameter CA_p = 1 * pi/180 //liquid contact angle with pyramid tip
+parameter CA_p = 10 * pi/180 //liquid contact angle with pyramid tip
 
 gravity_constant 0  // start with gravity off
 //scale_limit 0.1
 keep_macros
 
 //rotate display
-parameter alpha = 0*pi/180 //rotate view around z-axis
-parameter beta = 10*pi/180 //rotate view around y-axis
+parameter alpha = 20*pi/180 //rotate view around z-axis
+parameter beta = 15*pi/180 //rotate view around y-axis
 parameter gamma = 0*pi/180 //rotate view around x-axis
 
 //rotation matrix (https://en.wikipedia.org/wiki/Rotation_matrix)
@@ -36,7 +36,7 @@ view_matrix
 cos(alpha)*cos(beta) cos(alpha)*sin(beta)*sin(gamma)-sin(alpha)*cos(gamma) cos(alpha)*sin(beta)*cos(gamma)+sin(alpha)*sin(gamma) 0
 sin(alpha)*cos(beta) sin(alpha)*sin(beta)*sin(gamma)+cos(alpha)*cos(gamma) sin(alpha)*sin(beta)*cos(gamma)-cos(alpha)*sin(gamma) 0
 -sin(beta) cos(beta)*sin(gamma) cos(beta)*cos(gamma) -1
-0 0 0 2
+0 0 0 1.7
 
 //surface energy of substrate and pyramid
 #define TENS_s (-TENS*(cos(CA_s)))
@@ -62,7 +62,7 @@ q1: 0
 q2: x
 q3: 0
 
-//quantity mean_c info_only method mean_curvature_integral  // mean curvature
+quantity mean_c info_only method mean_curvature_integral  // mean curvature
 
 ///* BOUNDARIES */
 //
@@ -120,7 +120,7 @@ e3: 0
 content:
 //c1: height*y - ((y^2)/(2*tan(FA)))
 //c1: (-z*(tan(FA)))*(z-height+(x/tan(SA)))
-c1: -(0.5*(tan(FA)))*((z^2)-(height-(x/tan(SA))^2))
+c1: -(0.5*(tan(FA)))*((z^2)-(height+(x/tan(SA))^2))
 c2: 0
 c3: 0
 
@@ -157,7 +157,7 @@ content:
 c1: 0
 //c2: -height*x - ((x^2)/(2*tan(SA)))
 //c2: (-z*(tan(SA)))*(z-height+(y/tan(FA)))
-c2: -(0.5*(tan(SA)))*((z^2)-(height-(y/tan(FA))^2))
+c2: -(0.5*(tan(SA)))*((z^2)-(height+(y/tan(FA))^2))
 c3: 0
 
 constraint 35 // face 7
@@ -210,7 +210,7 @@ e3: 0
 content:
 //c1: height*y + ((y^2)/(2*tan(BA)))
 //c1: (z*(tan(BA)))*(z-height+(x/tan(SA)))
-c1: (0.5*(tan(BA)))*((z^2)-(height-(x/tan(SA))^2))
+c1: (0.5*(tan(BA)))*((z^2)-(height+(x/tan(SA))^2))
 c2: 0
 c3: 0
 
@@ -247,7 +247,7 @@ content:
 c1: 0
 //c2: -height*x + ((x^2)/(2*tan(SA)))
 //c2: (z*(tan(SA)))*(z-height+(y/tan(FA)))
-c2: (0.5*(tan(SA)))*((z^2)-(height-(y/tan(FA))^2))
+c2: (0.5*(tan(SA)))*((z^2)-(height+(y/tan(FA))^2))
 c3: 0
 
 //keep liquid outside pyramid
@@ -336,10 +336,10 @@ define vertex attribute old_coord real[3]
 
 vertices
 //liquid bottom substrate (include pinning/contact angle constraints)
-1 -Rs -Rs 0 constraint 1,13,14
-2 Rs -Rs 0 constraint 1,13,14
-3 Rs Rs 0 constraint 1,13,14
-4 -Rs Rs 0 constraint 1,13,14
+1 -Rs -Rs 0 constraint 1,14
+2 Rs -Rs 0 constraint 1,14
+3 Rs Rs 0 constraint 1,14
+4 -Rs Rs 0 constraint 1,14
 //5 -w_init*tan(SA) -w_init*tan(FA) height+w_init constraint 2,5 //pyramid contact line
 //6 w_init*tan(SA) -w_init*tan(FA) height+w_init constraint 2,3
 //7 w_init*tan(SA) w_init*tan(BA) height+w_init constraint 3,4
@@ -371,22 +371,22 @@ vertices
 
 edges
 //liquid
-1 1 2 constraint 1,14 lower_length lower_area //bottom substrate (include pinning/contact angle constraints)
-2 2 3 constraint 1,14 lower_length lower_area
-3 3 4 constraint 1,14 lower_length lower_area
-4 4 1 constraint 1,14 lower_length lower_area
-5 5 55 constraint 2,16,18 upper_length upper_area //pyramid top contact line
-55 55 6 constraint 25,16,18 upper_length upper_area
-6 6 65 constraint 3,15,17 upper_length upper_area
-65 65 7 constraint 35,15,17 upper_length upper_area
-7 7 75 constraint 4,16,18 upper_length upper_area
-75 75 8 constraint 45,16,18 upper_length upper_area
-8 8 85 constraint 5,15,17 upper_length upper_area
-85 85 5 constraint 55,15,17 upper_length upper_area
-9 1 5 constraint 13 //liquid-air interface
-10 2 6 constraint 13
-11 3 7 constraint 13
-12 4 8 constraint 13
+1 1 2 constraint 1,14 lower_length lower_area mean_c //bottom substrate (include pinning/contact angle constraints)
+2 2 3 constraint 1,14 lower_length lower_area mean_c
+3 3 4 constraint 1,14 lower_length lower_area mean_c
+4 4 1 constraint 1,14 lower_length lower_area mean_c
+5 5 55 constraint 2,16,18 upper_length upper_area mean_c //pyramid top contact line
+55 55 6 constraint 25,16,18 upper_length upper_area mean_c
+6 6 65 constraint 3,15,17 upper_length upper_area mean_c
+65 65 7 constraint 35,15,17 upper_length upper_area mean_c
+7 7 75 constraint 4,16,18 upper_length upper_area mean_c
+75 75 8 constraint 45,16,18 upper_length upper_area mean_c
+8 8 85 constraint 5,15,17 upper_length upper_area mean_c
+85 85 5 constraint 55,15,17 upper_length upper_area mean_c
+9 1 5 constraint 13,9,6 mean_c//liquid-air interface
+10 2 6 constraint 13,6,7 mean_c
+11 3 7 constraint 13,7,8 mean_c
+12 4 8 constraint 13,8,9 mean_c
 //13 9 5 constraint 2,5 //edge of pyramid tip
 //14 9 6 constraint 2,3
 //15 9 7 constraint 3,4
@@ -403,7 +403,7 @@ edges
 
 faces
 //liquid
-1 1 10 -55 -5 -9 constraint 6 tension TENS color yellow //air-liquid interface
+1 1 10 -55 -5 -9 constraint 6  tension TENS color yellow //air-liquid interface
 2 2 11 -65 -6 -10 constraint 7 tension TENS color yellow
 3 3 12 -75 -7 -11 constraint 8 tension TENS color yellow
 4 4 9 -85 -8 -12 constraint 9 tension TENS color yellow
@@ -426,6 +426,11 @@ bodies
 
 read
 
+//clear edge lines of fluid
+clear_lines := {
+                set edge color clear where on_constraint 6 or on_constraint 7 or 
+                            on_constraint 8 or on_constraint 9;
+                }
 
 //compute contact angle of liquid at pinned contact line
 compute_angle := {
@@ -440,7 +445,7 @@ compute_angle := {
             ind++;
         };
         pin_angle := (angle_sum/ind);//take average
-        print pin_angle*180/pi;
+        //print pin_angle*180/pi;
         }
 
 //change height
@@ -449,7 +454,8 @@ change_height := { dz := new_height - height; height := new_height;
                set vertex z z+dz where z > 0;
                recalc;
              }
-           
+
+//special refine routines       
 re := { refine edges where on_constraint 1;}
 
 re_top := { refine edges where on_constraint 2; refine edges where on_constraint 25;
@@ -458,6 +464,9 @@ re_top := { refine edges where on_constraint 2; refine edges where on_constraint
             refine edges where on_constraint 5; refine edges where on_constraint 55;}
 
 //refine edge where length > .0048 and not no_refine;
+
+//Evolve scripts
+
 gogo1 := {re;
     g5; r; g10; r; g20; r; g40; r; u; g100;
         scale_val := scale;
@@ -479,15 +488,15 @@ gogo3 := {re; g5;
         compute_angle;
         }
 
-
-//better evolve routine
 gogo4 := {re; g5; 
     {r; u; V; g 20;} 3;
     u; V; U; g10; U; u; V; g100; U;g200;U;
         scale_val := scale;
         compute_angle;
         }
-    
+
+
+
 // For saving coordinates before perturbation
 save_coords := { foreach vertex vv do
                     { set vv.old_coord[1] x;
@@ -525,8 +534,7 @@ compute_force := { save_coords;
                 force2 := (((body[1].pressure-ambient_pressure_value)*lower_area.value)- 
                             (lower_length.value*sin(pin_angle)))/2/pi;
                 /*force1a := -(hi_energy - lo_energy)/2/dheight;*/
-                printf "%-#2.6g\t%-#2.3g\t%-#2.3g\t%-#20.15g\n", 
-                height,force1,force2,scale_val;
+                
             }
 
            
@@ -588,57 +596,58 @@ compute_force := { save_coords;
 
 //force-contact radius data        
 get_fr := {
-    Rs_start := 2; Rs_end := 3; dr := 0.1;
-    outdir := "C:/Users/adwait/Desktop/Surface Evolver/test/"; //CHECK OUTPUT DIRECTORY
-    
-        quiet on;        
-        printf "Height:\tForce_Eng:\tForce_Calc:\tScale\n";
-       
-    num := 1+abs((Rs_end-Rs_start)/dr);
-    if Rs_end > Rs_start then {r_step := dr;} else {r_step := -dr;};
-
-        // save data        
-        params := "data";
-        outname := sprintf "%sdata-%s_Rsi%2.6g_Rsf%2.6g.txt",outdir,
-                    params,Rs_start,Rs_end;
-                   printf "Bottom_Angle\tContact_Radius\t"
-                "Height\tForce\tForce_Calc\t"
-               "Energy\tArea\tScale\tVolume\tPressure\tBottom_Length\t"
-               "Top_Length\tBottom_Area\tTop_Area\t"
-               "Pinning_Angle\n"
-                >> outname;
-                //local inx;
-        inx := 0;
-        dataline := "";    
-        while inx < num do
-        {   
-            replace_load datafilename;
-            Rs := Rs_start+inx*r_step;
-            recalc;
-            inx++;
+            Rs_start := 1.5; Rs_end := 3; dr := 0.5; //SET CONTACT RADIUS SEQUENCE
+            outdir := "C:/Users/adwait/Desktop/Surface Evolver/test/"; //CHECK OUTPUT DIRECTORY
+            data_name := "data"; //SET FILE NAME
             
-        gogo4; //evolve
-            //set edge color clear where on_constraint pinned;            
+            quiet on;        
+            printf "Contact_Radius:\tBottom_Angle:\tForce_Eng:\tForce_Calc:\tScale\n";
+               
+            num := 1+abs((Rs_end-Rs_start)/dr);
+            if Rs_end > Rs_start then {r_step := dr;} else {r_step := -dr;};
 
-            compute_force; //calculate force
-            
-            
-            dataline:= sprintf "%g\t%-#2.3g\t"
-                            "%-#2.6g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t"
-                            "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t"
-                            "%-#20.15g\t%-#20.15g\t%-#20.15g\n", 
-                            CA_s*180/pi,Rs,
-                            height,force1,force2,total_energy,total_area,scale_val, body[1].volume,
-                            body[1].pressure,lower_length.value,upper_length.value,lower_area.value, 
-                            upper_area.value,pin_angle*180/pi;
-             /* save data */
-             printf "%s",dataline >> outname;
+            // save data            
+            outname := sprintf "%s%s-Rsi%2.6g_Rsf%2.6g.txt",outdir,
+                                data_name,Rs_start,Rs_end;
+           printf "Contact_Radius\tHeight\tForce_Eng\tForce_Calc\t"
+                   "Bottom_Angle\tTop_Angle\tSide_Angle\tFront_Angle\tBack_Angle\tTilt_Angle"
+                   "Energy\tArea\tScale\tVolume\tPressure\tBottom_Length\t"
+                   "Top_Length\tBottom_Area\tTop_Area\t"
+                   "Bottom_Angle_Calc\tMean_curvature\n" >> outname;
 
-            /* save dump file */
-            dump sprintf "%s%s_dump%03u-Rs%2.6g.dmp",outdir,
-                        params,inx,Rs;
+            inx := 0;
+            dataline := "";    
+            while inx < num do
+            {   
+                replace_load datafilename;
+                Rs := Rs_start+inx*r_step;
+                recalc;
+                inx++;
+                
+                gogo2; //evolve
+                //set edge color clear where on_constraint 6 or on_constraint 7 or on_constraint 8 or on_constraint 9;            
 
-        };
-        quiet off;
+                compute_force; //calculate force
+                printf "%g\t%#2.3g\t%-#2.3g\t%-#2.3g\t%-#20.15g\n", 
+                        Rs,pin_angle*180/pi,force1,force2,scale_val;    
+                    
+                dataline:= sprintf "%-#2.3g\t%-#2.6g\t%-#20.15g\t%-#20.15g\t"
+                                "%g\t%g\t%g\t%g\t%g\t%g\t"
+                                "%-#20.15g\t%-#20.15g\t"
+                                "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t"
+                                "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\n", 
+                                Rs,height,force1,force2,
+                                CA_s,CA_p,SA,FA,BA,tilt,
+                                total_energy,total_area,scale_val, body[1].volume,
+                                body[1].pressure,lower_length.value,upper_length.value,lower_area.value, 
+                                upper_area.value,pin_angle*180/pi,mean_c.value;
+                 /* save data */
+                 printf "%s",dataline >> outname;
 
-        }
+                /* save dump file */
+                dump sprintf "%s%s_dump%03u-Rs%2.6g.dmp",outdir,data_name,inx,Rs;
+
+            };
+            quiet off;
+
+          }
