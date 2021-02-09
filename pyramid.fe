@@ -7,7 +7,7 @@
 parameter height = 0 // distance of pyramid tip from surface
 parameter Rs = 2.7 //pinned radius at substrate (REMOVE CONTACT ANGLE ENERGY CONSTRAINT 1)
 parameter w_top =  3 //height of dummy pyramid (only for reference)
-parameter w_init = 1 //initial wetted height of the pyramid
+parameter w_init = 0.5 //initial wetted height of the pyramid
 parameter SA = 17.5 * pi/180 //Side angle of pyramid 17.5
 parameter FA = 15 * pi/180 //Front angle of pyramid 15
 parameter BA = 25 * pi/180 //Back angle of pyramid 25
@@ -62,6 +62,11 @@ quantity mean_c info_only method mean_curvature_integral  // mean curvature
 
 ///* BOUNDARIES */
 //
+boundary 1 parameters 1 convex// bottom pinned contact
+x1: Rs * cos(p1)
+x2: Rs * sin(p1)
+x3: 0
+
 //boundary 1 parameters 1 // edge 13
 //x1: -p1 * tan(SA)
 //x2: -p1 * tan(FA)
@@ -332,10 +337,14 @@ define vertex attribute old_coord real[3]
 
 vertices
 //liquid bottom substrate (include pinning/contact angle constraints)
-1 -Rs -Rs 0 constraint 1,14
-2 Rs -Rs 0 constraint 1,14
-3 Rs Rs 0 constraint 1,14
-4 -Rs Rs 0 constraint 1,14
+//1 -Rs -Rs 0 constraint 1,14
+//2 Rs -Rs 0 constraint 1,14
+//3 Rs Rs 0 constraint 1,14
+//4 -Rs Rs 0 constraint 1,14
+1 5*pi/4 boundary 1 //pinnned contact (bottom)
+2 -pi/4 boundary 1
+3 pi/4 boundary 1
+4 3*pi/4 boundary 1
 //5 -w_init*tan(SA) -w_init*tan(FA) height+w_init constraint 2,5 //pyramid contact line
 //6 w_init*tan(SA) -w_init*tan(FA) height+w_init constraint 2,3
 //7 w_init*tan(SA) w_init*tan(BA) height+w_init constraint 3,4
@@ -498,6 +507,16 @@ change_height := { dz := new_height - height; height := new_height;
                recalc;
              }
 
+//change Rs (bottom pin radius)
+new_Rs := Rs //set new_Rs and run change_Rs
+change_Rs := { dRs := (new_Rs - Rs)/(2*sqrt(2)); Rs := new_Rs;
+               set vertex y y-dRs where on_constraint 6;
+               set vertex x x+dRs where on_constraint 7;
+               set vertex y y+dRs where on_constraint 8;
+               set vertex x x-dRs where on_constraint 9;
+               recalc;
+             }       
+
 //special refine routines       
 re := { refine edges where on_constraint 1;}
 
@@ -638,8 +657,8 @@ compute_force := { save_coords;
 
 //force-distance data        
 get_fd := {
-            height_start := 0; height_end := 0.4; dh := 0.1; //SET HEIGHT SEQUENCE
-            outdir := "C:/Users/adwait/Desktop/Surface Evolver/test/"; //CHECK OUTPUT DIRECTORY
+    height_start := 0; height_end := 0.4; dh := 0.05; //SET HEIGHT SEQUENCE
+    outdir := "E:/Work/Surface Evolver/afm_pyramid/data/20210208/force_distance/"; //CHECK OUTPUT DIRECTORY
             data_name := "data"; //SET FILE NAME
             
             quiet on;        
@@ -698,9 +717,9 @@ get_fd := {
 
 //force-contact radius data        
 get_fr := {
-            Rs_start := 1.5; Rs_end := 3; dr := 0.5; //SET CONTACT RADIUS SEQUENCE
-            outdir := "C:/Users/adwait/Desktop/Surface Evolver/test/"; //CHECK OUTPUT DIRECTORY
-            data_name := "data"; //SET FILE NAME
+            Rs_start := 1.5; Rs_end := 3; dr := 0.1; //SET CONTACT RADIUS SEQUENCE
+            outdir := "E:/Work/Surface Evolver/afm_pyramid/data/20210209/"; //CHECK OUTPUT DIRECTORY
+            data_name := "data2"; //SET FILE NAME
             
             quiet on;        
             printf "Contact_Radius:\tBottom_Angle:\tForce_Eng:\tForce_Calc:\tScale\n";
@@ -722,8 +741,8 @@ get_fr := {
             while inx < num do
             {   
                 replace_load datafilename;
-                Rs := Rs_start+inx*r_step;
-                recalc;
+                new_Rs := Rs_start+inx*r_step;
+                change_Rs;
                 inx++;
                 
                 gogo2; //evolve
