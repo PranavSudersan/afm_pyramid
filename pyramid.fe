@@ -5,18 +5,18 @@
 //Contact angle of liquid with pyramid and bottom substrate are given by angle_p and angle_s respectively
 
 parameter height = 0 // distance of pyramid tip from surface
-parameter Rs = 2.7 //pinned radius at substrate (REMOVE CONTACT ANGLE ENERGY CONSTRAINT 1)
+parameter Rs = 2 //pinned radius at substrate (REMOVE CONTACT ANGLE ENERGY CONSTRAINT 1)
 parameter w_top =  3 //height of dummy pyramid (only for reference)
 parameter w_init = 0.5 //initial wetted height of the pyramid
 parameter SA = 17.5 * pi/180 //Side angle of pyramid 17.5
 parameter FA = 15 * pi/180 //Front angle of pyramid 15
 parameter BA = 25 * pi/180 //Back angle of pyramid 25
-parameter tilt = 10 * pi/180 //tilt pyramid around x-axis
+parameter tilt = 0 * pi/180 //tilt pyramid around x-axis
 
 
 parameter TENS = 1 //suface tension of liquid
 parameter CA_s = 30 * pi/180 //liquid contact angle with surface (REMOVE PINNED CONTACT ONSTRAINT 14)
-parameter CA_p = 10 * pi/180 //liquid contact angle with pyramid tip
+parameter CA_p = 120 * pi/180 //liquid contact angle with pyramid tip
 
 gravity_constant 0  // start with gravity off
 //scale_limit 0.1
@@ -536,6 +536,13 @@ compute_angle_top := {
     printf "%g\t%g\t%g\t%g\t", angle6,angle7,angle8,angle9;
                       }
 
+compute_wetted_height := {
+    h1 := max(vertices where on_constraint 2 or on_constraint 25,z);
+    h2 := max(vertices where on_constraint 3 or on_constraint 35,z);
+    h3 := max(vertices where on_constraint 4 or on_constraint 45,z);
+    h4 := max(vertices where on_constraint 5 or on_constraint 55,z);
+    wetted_height := (h1+h2+h3+h4)/4; //average wetted height
+                            }
 //change height
 new_height := height //set new_height and run change_height
 change_height := { dz := new_height - height; height := new_height;
@@ -569,6 +576,7 @@ gogo1 := {re;
         g5; r; g10; r; g20; r; g40; r; u; g100;
         scale_val := scale;
         compute_angle_top; compute_angle_bottom;
+        compute_wetted_height;
         }
 
 //better evolve routine
@@ -577,6 +585,7 @@ gogo2 := {re; g5;
         g100;U;g100;U;
         scale_val := scale;
         compute_angle_top; compute_angle_bottom;
+        compute_wetted_height;
         }
     
 gogo3 := {re; g5; 
@@ -584,6 +593,7 @@ gogo3 := {re; g5;
         g100;
         scale_val := scale;
         compute_angle_top; compute_angle_bottom;
+        compute_wetted_height;
         }
 
 gogo4 := {re; g5; 
@@ -591,6 +601,7 @@ gogo4 := {re; g5;
         u; V; U; g10; U; u; V; g100; U;g200;U;
         scale_val := scale;
         compute_angle_top; compute_angle_bottom;
+        compute_wetted_height;
         }
 
 
@@ -693,9 +704,9 @@ compute_force := { save_coords;
 
 //force-distance data        
 get_fd := {
-    height_start := 0; height_end := 0.4; dh := 0.05; //SET HEIGHT SEQUENCE
-    outdir := "E:/Work/Surface Evolver/afm_pyramid/data/20210208/force_distance/"; //CHECK OUTPUT DIRECTORY
-            data_name := "data"; //SET FILE NAME
+    height_start := 1e-10; height_end := 0.3; dh := 0.02; //SET HEIGHT SEQUENCE
+    outdir := "E:/Work/Surface Evolver/afm_pyramid/data/20210325_nps/Rs=3/"; //CHECK OUTPUT DIRECTORY
+    data_name := sprintf "data-CA_p%2.6g-Rs%2.6g",CA_p*180/pi,Rs; //SET FILE NAME
             
             quiet on;        
             printf "Contact_Radius:\tBottom_Angle:\tForce_Eng:\tForce_Calc:\tScale\n";
@@ -753,9 +764,9 @@ get_fd := {
 
 //force-contact radius data        
 get_fr := {
-            Rs_start := 1.5; Rs_end := 3; dr := 0.1; //SET CONTACT RADIUS SEQUENCE
-            outdir := "E:/Work/Surface Evolver/afm_pyramid/data/20210209/"; //CHECK OUTPUT DIRECTORY
-            data_name := "data2"; //SET FILE NAME
+    Rs_start := 1.5; Rs_end := 3.5; dr := 0.1; //SET CONTACT RADIUS SEQUENCE
+            outdir := "E:/Work/Surface Evolver/afm_pyramid/data/20210325_nps/height=0/"; //CHECK OUTPUT DIRECTORY
+            data_name := sprintf "data-CA_p%2.6g-h%2.6g",CA_p*180/pi,height; //SET FILE NAME
             
             quiet on;        
             printf "Contact_Radius:\tBottom_Angle:\tForce_Eng:\tForce_Calc:\tScale\n";
@@ -770,7 +781,7 @@ get_fr := {
                     "Bottom_Angle\tTop_Angle\tSide_Angle\tFront_Angle\tBack_Angle\tTilt_Angle\t"
                    "Energy\tArea\tScale\tVolume\tPressure\tBottom_Length\t"
                    "Top_Length\tBottom_Area\tTop_Area\tMean_curvature\t"
-                   "Bottom_Angle_Calc\tTop_Angle6\tTop_Angle7\tTop_Angle8\tTop_Angle9\n" >> outname;
+                   "Bottom_Angle_Calc\tTop_Angle6\tTop_Angle7\tTop_Angle8\tTop_Angle9\tAverage Wetted Height\n" >> outname;
 
             inx := 0;
             dataline := "";    
@@ -793,13 +804,13 @@ get_fr := {
                                 "%-#20.15g\t%-#20.15g\t"
                                 "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t"
                                 "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t"
-                                "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\n",
+                                "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\n",
                                 Rs,height,force1,force2,
                                 CA_s*180/pi,CA_p*180/pi,SA*180/pi,FA*180/pi,BA*180/pi,tilt*180/pi,
                                 total_energy,total_area,scale_val, body[1].volume,
                                 body[1].pressure,lower_length.value, 
                                 upper_length.value,lower_area.value,upper_area.value,mean_c.value,
-                                pin_angle*180/pi,angle6,angle7,angle8,angle9;
+                                pin_angle*180/pi,angle6,angle7,angle8,angle9,wetted_height;
                  /* save data */
                  printf "%s",dataline >> outname;
 
