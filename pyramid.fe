@@ -6,9 +6,9 @@
 
 //COMMENT "height" and "CA_p" PARAMETERS WHEN RUNNING fd_series SCRIPT! UNCOMMENT THEM WHEN RUNNING THIS FILE!
 //ALWAYS RERUN THIS FILE, THEN COMMENTS ABOVE PARAMETERS BEFORE RUNNING EXTERNAL SCRIPTS
-//parameter height = 0 // distance of pyramid tip from surface
-//parameter CA_p = 15 * pi/180 //liquid contact angle with pyramid tip
-parameter Rs = 2.3 //pinned radius at substrate (REMOVE CONTACT ANGLE ENERGY CONSTRAINT 1)
+parameter height = 0 // distance of pyramid tip from surface
+parameter CA_p = 15 * pi/180 //liquid contact angle with pyramid tip
+parameter Rs = 2.1 //pinned radius at substrate (REMOVE CONTACT ANGLE ENERGY CONSTRAINT 1)
 
 parameter w_top =  3 //height of dummy pyramid (only for reference)
 //define initial value expression by trial and error for different CA_p value and fitting them
@@ -17,7 +17,7 @@ parameter w_init = (((3.492e-5)*((CA_p*180/pi)^2))-(0.00814*(CA_p*180/pi))+0.914
 parameter SA = 17.5 * pi/180 //Side angle of pyramid 17.5
 parameter FA = 15 * pi/180 //Front angle of pyramid 15
 parameter BA = 25 * pi/180 //Back angle of pyramid 25
-parameter tilt = 0 * pi/180 //tilt pyramid around x-axis
+parameter tilt = abs((BA-FA)*0.5) //tilt pyramid around x-axis (made symmetric for improved meshing)
 
 
 parameter TENS = 1 //suface tension of liquid
@@ -105,12 +105,12 @@ formula: z = 0
 constraint 14 convex// pinning at substrate CHECK! remove if no pinning
 formula: x^2 + y^2 = Rs^2
 
-// fix edge center vertex at pyramid
+// fix edge center vertex at pyramid for correct calculation of line integrals
 constraint 26
 formula: x = 0
 
 constraint 36
-formula: y = (0.5*w_init*(tan(BA)-tan(FA)))*cos(tilt)
+formula: y = 0
 
 //pyramid tip plane constraints
 constraint 2 // face 6
@@ -535,9 +535,9 @@ function real get_angle(real c_num) //c_num: constraint number of edge
 
 
 compute_angle_top := {
-    angle6 := 90 + (FA*180/pi) - ((get_angle(2)+get_angle(25))*0.5); //face 6
+    angle6 := 90 + (FA*180/pi) - ((get_angle(2)+get_angle(25))*0.5) + (tilt*180/pi); //face 6
     angle7 := 90 + (SA*180/pi) - ((get_angle(3)+get_angle(35))*0.5); //face 7
-    angle8 := 90 + (BA*180/pi) - ((get_angle(4)+get_angle(45))*0.5); //face 8
+    angle8 := 90 + (BA*180/pi) - ((get_angle(4)+get_angle(45))*0.5)- (tilt*180/pi); //face 8
     angle9 := 90 + (SA*180/pi) - ((get_angle(5)+get_angle(55))*0.5); //face 9
     printf "%g\t%g\t%g\t%g\t", angle6,angle7,angle8,angle9;
                       }
