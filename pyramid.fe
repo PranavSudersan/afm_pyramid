@@ -4,10 +4,16 @@
 //Pyramid tip is at 'height' distance above surface
 //Contact angle of liquid with pyramid and bottom substrate are given by angle_p and angle_s respectively
 
-parameter height = 0 // distance of pyramid tip from surface
-parameter Rs = 2 //pinned radius at substrate (REMOVE CONTACT ANGLE ENERGY CONSTRAINT 1)
+//COMMENT "height" and "CA_p" PARAMETERS WHEN RUNNING fd_series SCRIPT! UNCOMMENT THEM WHEN RUNNING THIS FILE!
+//ALWAYS RERUN THIS FILE, THEN COMMENTS ABOVE PARAMETERS BEFORE RUNNING EXTERNAL SCRIPTS
+//parameter height = 0 // distance of pyramid tip from surface
+//parameter CA_p = 15 * pi/180 //liquid contact angle with pyramid tip
+parameter Rs = 2.3 //pinned radius at substrate (REMOVE CONTACT ANGLE ENERGY CONSTRAINT 1)
+
 parameter w_top =  3 //height of dummy pyramid (only for reference)
-parameter w_init = 0.5 //initial wetted height of the pyramid
+//define initial value expression by trial and error for different CA_p value and fitting them
+parameter w_init = (((3.492e-5)*((CA_p*180/pi)^2))-(0.00814*(CA_p*180/pi))+0.914) - height  //initial wetted height of the pyramid
+
 parameter SA = 17.5 * pi/180 //Side angle of pyramid 17.5
 parameter FA = 15 * pi/180 //Front angle of pyramid 15
 parameter BA = 25 * pi/180 //Back angle of pyramid 25
@@ -16,7 +22,7 @@ parameter tilt = 0 * pi/180 //tilt pyramid around x-axis
 
 parameter TENS = 1 //suface tension of liquid
 parameter CA_s = 30 * pi/180 //liquid contact angle with surface (REMOVE PINNED CONTACT ONSTRAINT 14)
-parameter CA_p = 120 * pi/180 //liquid contact angle with pyramid tip
+
 
 gravity_constant 0  // start with gravity off
 //scale_limit 0.1
@@ -91,12 +97,12 @@ x3: 0
 
 constraint 1   // substrate face
 formula: z = 0
-//energy: //uncomment to consider oontact angle
+//energy: //uncomment to consider oontact angle CHECK! keep if pinning
 //e1: 0
 //e2: TENS_s * x
 //e3: 0
 
-constraint 14 convex// pinning at substrate
+constraint 14 convex// pinning at substrate CHECK! remove if no pinning
 formula: x^2 + y^2 = Rs^2
 
 // fix edge center vertex at pyramid
@@ -104,7 +110,7 @@ constraint 26
 formula: x = 0
 
 constraint 36
-formula: y = 0
+formula: y = (0.5*w_init*(tan(BA)-tan(FA)))*cos(tilt)
 
 //pyramid tip plane constraints
 constraint 2 // face 6
@@ -370,11 +376,11 @@ define vertex attribute old_coord real[3]
 /* INITIAL SHAPE SPECIFICATION */
 
 vertices
-//liquid bottom substrate (include pinning/contact angle constraints)
-//1 -Rs -Rs 0 constraint 1,14
-//2 Rs -Rs 0 constraint 1,14
-//3 Rs Rs 0 constraint 1,14
-//4 -Rs Rs 0 constraint 1,14
+//liquid bottom substrate (CHECK! include pinning/contact angle constraints 14)
+//1 -Rs -Rs 0 constraint 1 //substrate contact angle
+//2 Rs -Rs 0 constraint 1
+//3 Rs Rs 0 constraint 1
+//4 -Rs Rs 0 constraint 1
 1 5*pi/4 boundary 1 //pinnned contact (bottom)
 2 -pi/4 boundary 1
 3 pi/4 boundary 1
@@ -392,12 +398,12 @@ vertices
  55 0 (-w_init*tan(FA))*cos(tilt)-(w_init)*sin(tilt) (-w_init*tan(FA))*sin(tilt)+(w_init)*cos(tilt)+height  constraint 27,26
  6 w_init*tan(SA) (-w_init*tan(FA))*cos(tilt)-(w_init)*sin(tilt) (-w_init*tan(FA))*sin(tilt)+(w_init)*cos(tilt)+height  constraint 27,37
  //65 w_init*tan(SA) -(height+w_init)*sin(tilt) (w_init*tan(BA))*sin(tilt)+(height+w_init)*cos(tilt)  constraint 37,36
- 65 w_init*tan(SA) 0 (w_init*tan(BA))*sin(tilt)+(w_init)*cos(tilt)+height  constraint 37,36
+ 65 w_init*tan(SA) (0.5*w_init*(tan(BA)-tan(FA)))*cos(tilt)-(w_init)*sin(tilt) (w_init*tan(BA))*sin(tilt)+(w_init)*cos(tilt)+height  constraint 37,36
  7 w_init*tan(SA) (w_init*tan(BA))*cos(tilt)-(w_init)*sin(tilt) (w_init*tan(BA))*sin(tilt)+(w_init)*cos(tilt)+height  constraint 37,47
  75 0 (w_init*tan(BA))*cos(tilt)-(w_init)*sin(tilt) (w_init*tan(BA))*sin(tilt)+(w_init)*cos(tilt)+height  constraint 47,26
  8 -w_init*tan(SA) (w_init*tan(BA))*cos(tilt)-(w_init)*sin(tilt) (w_init*tan(BA))*sin(tilt)+(w_init)*cos(tilt)+height  constraint 47,57
  //85 -w_init*tan(SA) -(height+w_init)*sin(tilt) (w_init*tan(BA))*sin(tilt)+(height+w_init)*cos(tilt)  constraint 57,36
- 85 -w_init*tan(SA) 0 (w_init*tan(BA))*sin(tilt)+(w_init)*cos(tilt)+height  constraint 57,36
+ 85 -w_init*tan(SA) (0.5*w_init*(tan(BA)-tan(FA)))*cos(tilt)-(w_init)*sin(tilt) (w_init*tan(BA))*sin(tilt)+(w_init)*cos(tilt)+height  constraint 57,36
  //9 0 0 height constraint 10,11,12
 //pyramid
 //10 -w_top*tan(SA) -w_top*tan(FA) height+w_top fixed
@@ -412,7 +418,7 @@ vertices
 
 edges
 //liquid
-1 1 2 constraint 1,14 lower_length lower_area mean_c //bottom substrate (include pinning/contact angle constraints)
+1 1 2 constraint 1,14 lower_length lower_area mean_c //bottom substrate (CHECK! include pinning/contact angle constraints 14)
 2 2 3 constraint 1,14 lower_length lower_area mean_c
 3 3 4 constraint 1,14 lower_length lower_area mean_c
 4 4 1 constraint 1,14 lower_length lower_area mean_c
@@ -545,11 +551,20 @@ compute_wetted_height := {
                             }
 //change height
 new_height := height //set new_height and run change_height
-change_height := { dz := new_height - height; height := new_height;
-               set vertex z z+dz where z > 0;
+change_height := { old_height := height; dz := new_height - old_height; height := new_height;
+    set vertex z z+dz where z > 0 and (not on_constraint 6 and not on_constraint 7 and not on_constraint 8 and not on_constraint 9);
+    set vertex z z*(new_height+w_init)/(old_height+w_init) where on_constraint 6 or on_constraint 7 or on_constraint 8 or on_constraint 9;
                recalc;
              }
 
+change_height1 := { old_height := height; dz := new_height - old_height; height := new_height;
+    set vertex z z+dz where fixed;
+    set vertex[5] z w_init;
+    set vertex[55] z w_init;
+    set vertex[6] z w_init;
+               recalc;
+             }
+           
 //change Rs (bottom pin radius)
 new_Rs := Rs //set new_Rs and run change_Rs
 change_Rs := { dRs := (new_Rs - Rs)/(2*sqrt(2)); Rs := new_Rs;
@@ -567,6 +582,71 @@ re_top := { refine edges where on_constraint 2; refine edges where on_constraint
             refine edges where on_constraint 3; refine edges where on_constraint 35;
             refine edges where on_constraint 4; refine edges where on_constraint 45;
             refine edges where on_constraint 5; refine edges where on_constraint 55;}
+        
+//refine top facets    
+re_top2 := {foreach edge ee where on_quantity upper_length do 
+    {refine ee.facets;};
+         }
+
+//refine top face edges
+re_top3 := { 
+    foreach vertices vv where on_constraint 27 and on_constraint 57  do {
+        //printf "%g %g %g\\n",x,y,z; 
+    refine vv.edges where length == max(vv.edges,length);
+    }; 
+    foreach vertices vv where on_constraint 27 and on_constraint 37  do {
+        //printf "%g %g %g\\n",x,y,z; 
+    refine vv.edges where length == max(vv.edges,length);
+    };
+    foreach vertices vv where on_constraint 37 and on_constraint 47  do {
+        //printf "%g %g %g\\n",x,y,z; 
+    refine vv.edges where length == max(vv.edges,length);
+    };
+    foreach vertices vv where on_constraint 47 and on_constraint 57  do {
+        //printf "%g %g %g\\n",x,y,z; 
+    refine vv.edges where length == max(vv.edges,length);
+    };
+         }
+
+//refine top large faces 
+re_top4 := {
+    foreach vertices vv where on_constraint 27 or on_constraint 57 or on_constraint 37 or on_constraint 47 do {
+        //printf "%g %g %g\\n",x,y,z; //list vv.facets; 
+        foreach vv.facets ff do {
+            vv_count := count(ff.edges where not on_quantity upper_length, id);
+            if vv_count == 3 then {refine ff;};
+                }; 
+            }; 
+//    foreach vertices vv where on_constraint 27 and on_constraint 57  do {
+//        printf "%g %g %g\\n",x,y,z; //list vv.facets; 
+//        foreach vv.facets ff do {
+//            vv_count := count(ff.edges where not on_quantity upper_length, id);
+//            if vv_count == 3 then {refine ff;};
+//                }; 
+//            }; 
+//    foreach vertices vv where on_constraint 27 and on_constraint 37  do {
+//        printf "%g %g %g\\n",x,y,z; //list vv.facets; 
+//        foreach vv.facets ff do {
+//            vv_count := count(ff.edges where not on_quantity upper_length, id);
+//            if vv_count == 3 then {refine ff;};
+//                }; 
+//            };
+//    foreach vertices vv where on_constraint 37 and on_constraint 47  do {
+//        printf "%g %g %g\\n",x,y,z; //list vv.facets; 
+//        foreach vv.facets ff do {
+//            vv_count := count(ff.edges where not on_quantity upper_length, id);
+//            if vv_count == 3 then {refine ff;};
+//                }; 
+//            };
+//    foreach vertices vv where on_constraint 47 and on_constraint 57  do {
+//        printf "%g %g %g\\n",x,y,z; //list vv.facets; 
+//        foreach vv.facets ff do {
+//            vv_count := count(ff.edges where not on_quantity upper_length, id);
+//            if vv_count == 3 then {refine ff;};
+//                }; 
+//            };
+    }
+
 
 //refine edge where length > .0048 and not no_refine;
 
@@ -587,15 +667,26 @@ gogo2 := {re; g5;
         compute_angle_top; compute_angle_bottom;
         compute_wetted_height;
         }
-    
-gogo3 := {re; g5; 
-        {r; u; V; g 10;} 4;
-        g100;
+    //use for small Rs    
+gogo3 := {re;re_top3; g30; 
+    {r; u; V; g 20;} 3;//re_top3; u; V;
+    //g1000;
+    U;g100;U;
         scale_val := scale;
         compute_angle_top; compute_angle_bottom;
         compute_wetted_height;
         }
 
+//use for large Rs
+gogo5 := {re;re_top3; re_top4;re_top3; re_top4;re_top2;re_top;g100; 
+    {r; u; V; g 100;} 3;//re_top3; u; V;
+    //g1000;
+    U;g100;U;
+        scale_val := scale;
+        compute_angle_top; compute_angle_bottom;
+        compute_wetted_height;
+        }
+    
 gogo4 := {re; g5; 
         {r; u; V; g 20;} 3;
         u; V; U; g10; U; u; V; g100; U;g200;U;
@@ -703,36 +794,110 @@ compute_force := { save_coords;
 //        }
 
 //force-distance data        
+//get_fd := {
+//    height_start := 0.001; height_end := 0.4; dh := 0.02; //SET HEIGHT SEQUENCE CHECK!
+//    outdir := "E:/Work/Surface Evolver/afm_pyramid/data/20220309_rfesp_np_fd/Rs_3.0/"; //CHECK OUTPUT DIRECTORY
+//    data_name := sprintf "data-CA_p%2.6g-Rs_%2.6g",CA_p*180/pi,Rs; //SET FILE NAME
+//            
+//            quiet on;        
+//            printf "Contact_Radius:\tBottom_Angle:\tForce_Eng:\tForce_Calc:\tScale\n";
+//               
+//            num := 1+abs((height_end-height_start)/dh);
+//            if height_end > height_start then {h_step := dh;} else {h_step := -dh;};
+//
+//            // save data            
+//            outname := sprintf "%s%s.txt",outdir,data_name;
+//            
+//        if height == 0.001 then {printf "Contact_Radius\tHeight\tForce_Eng\tForce_Calc\t"
+//            "Bottom_Angle\tTop_Angle\tSide_Angle\tFront_Angle\tBack_Angle\tTilt_Angle\t"
+//            "Energy\tArea\tScale\tVolume\tPressure\tBottom_Length\t"
+//        "Top_Length\tBottom_Area\tTop_Area\tMean_curvature\t"
+//    "Bottom_Angle_Calc\tTop_Angle6\tTop_Angle7\tTop_Angle8\tTop_Angle9\tAverage Wetted Height\tInitial_guess_height\n">> outname;} 
+//            else {printf "";};
+////                   printf "Contact_Radius\tHeight\tForce_Eng\tForce_Calc\t"
+////                            "Bottom_Angle\tTop_Angle\tSide_Angle\tFront_Angle\tBack_Angle\tTilt_Angle\t"
+////                           "Energy\tArea\tScale\tVolume\tPressure\tBottom_Length\t"
+////                           "Top_Length\tBottom_Area\tTop_Area\tMean_curvature\t"
+////                           "Bottom_Angle_Calc\tTop_Angle6\tTop_Angle7\tTop_Angle8\tTop_Angle9\n" >> outname;) 
+////                           else {printf ".";}};
+//
+//            inx := 0;
+//            dataline := "";    
+//            while inx < num do
+//            {   
+//                replace_load datafilename;
+//                new_height := height_start+inx*h_step;
+//                change_height;
+//                inx++;
+//                
+//            gogo5; //evolve routine
+//                //set edge color clear where on_constraint 6 or on_constraint 7 or on_constraint 8 or on_constraint 9;            
+//
+//                compute_force; //calculate force
+//                printf "%g\t%#2.3g\t%-#2.3g\t%-#2.3g\t%-#20.15g\n", 
+//                        height,pin_angle*180/pi,force1,force2,scale_val;    
+//                    
+//                dataline:= sprintf "%-#2.3g\t%-#2.6g\t%-#20.15g\t%-#20.15g\t"
+//                                "%g\t%g\t%g\t%g\t%g\t%g\t"
+//                                "%-#20.15g\t%-#20.15g\t"
+//                                "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t"
+//                                "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t"
+//                                "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#2.6g\n",
+//                                Rs,height,force1,force2,
+//                                CA_s*180/pi,CA_p*180/pi,SA*180/pi,FA*180/pi,BA*180/pi,tilt*180/pi,
+//                                total_energy,total_area,scale_val, body[1].volume,
+//                                body[1].pressure,lower_length.value, 
+//                                upper_length.value,lower_area.value,upper_area.value,mean_c.value,
+//                                pin_angle*180/pi,angle6,angle7,angle8,angle9,wetted_height,w_init;
+//                 /* save data */
+//                 printf "%s",dataline >> outname;
+//
+//                /* save dump file */
+//                dump sprintf "%s%s_dump%03u-h%2.6g.dmp",outdir,data_name,inx,height;
+//
+//            };
+//            quiet off;
+//
+//          }
+
+//force-distance data        
 get_fd := {
-    height_start := 1e-10; height_end := 0.3; dh := 0.02; //SET HEIGHT SEQUENCE
-    outdir := "E:/Work/Surface Evolver/afm_pyramid/data/20210325_nps/Rs=3/"; //CHECK OUTPUT DIRECTORY
-    data_name := sprintf "data-CA_p%2.6g-Rs%2.6g",CA_p*180/pi,Rs; //SET FILE NAME
+    //height_start := 0.001; height_end := 0.4; dh := 0.02; //SET HEIGHT SEQUENCE CHECK!
+    outdir := "E:/Work/Surface Evolver/afm_pyramid/data/20220309_rfesp_np_fd/Rs_2.3/"; //CHECK OUTPUT DIRECTORY
+    data_name := sprintf "data-CA_p%2.6g-Rs_%2.6g",CA_p*180/pi,Rs; //SET FILE NAME
             
             quiet on;        
             printf "Contact_Radius:\tBottom_Angle:\tForce_Eng:\tForce_Calc:\tScale\n";
                
-            num := 1+abs((height_end-height_start)/dh);
-            if height_end > height_start then {h_step := dh;} else {h_step := -dh;};
+//            num := 1+abs((height_end-height_start)/dh);
+//            if height_end > height_start then {h_step := dh;} else {h_step := -dh;};
 
             // save data            
-            outname := sprintf "%s%s-hi%2.6g_hf%2.6g.txt",outdir,
-                                data_name,height_start,height_end;
-           printf "Contact_Radius\tHeight\tForce_Eng\tForce_Calc\t"
-           "Bottom_Angle\tTop_Angle\tSide_Angle\tFront_Angle\tBack_Angle\tTilt_Angle\t"
-                   "Energy\tArea\tScale\tVolume\tPressure\tBottom_Length\t"
-                   "Top_Length\tBottom_Area\tTop_Area\tMean_curvature\t"
-                   "Bottom_Angle_Calc\tTop_Angle6\tTop_Angle7\tTop_Angle8\tTop_Angle9\n" >> outname;
+            outname := sprintf "%s%s.txt",outdir,data_name;
+            
+        if height == 0 then {printf "Contact_Radius\tHeight\tForce_Eng\tForce_Calc\t"
+            "Bottom_Angle\tTop_Angle\tSide_Angle\tFront_Angle\tBack_Angle\tTilt_Angle\t"
+            "Energy\tArea\tScale\tVolume\tPressure\tBottom_Length\t"
+        "Top_Length\tBottom_Area\tTop_Area\tMean_curvature\t"
+    "Bottom_Angle_Calc\tTop_Angle6\tTop_Angle7\tTop_Angle8\tTop_Angle9\tAverage Wetted Height\tInitial_guess_height\n">> outname;} 
+            else {printf "";};
+//                   printf "Contact_Radius\tHeight\tForce_Eng\tForce_Calc\t"
+//                            "Bottom_Angle\tTop_Angle\tSide_Angle\tFront_Angle\tBack_Angle\tTilt_Angle\t"
+//                           "Energy\tArea\tScale\tVolume\tPressure\tBottom_Length\t"
+//                           "Top_Length\tBottom_Area\tTop_Area\tMean_curvature\t"
+//                           "Bottom_Angle_Calc\tTop_Angle6\tTop_Angle7\tTop_Angle8\tTop_Angle9\n" >> outname;) 
+//                           else {printf ".";}};
 
-            inx := 0;
+//            inx := 0;
             dataline := "";    
-            while inx < num do
-            {   
-                replace_load datafilename;
-                new_height := height_start+inx*h_step;
-                change_height;
-                inx++;
+//            while inx < num do
+//            {   
+//                replace_load datafilename;
+//                new_height := height_start+inx*h_step;
+//                change_height;
+//                inx++;
                 
-                gogo2; //evolve
+            gogo5; //evolve routine
                 //set edge color clear where on_constraint 6 or on_constraint 7 or on_constraint 8 or on_constraint 9;            
 
                 compute_force; //calculate force
@@ -744,20 +909,20 @@ get_fd := {
                                 "%-#20.15g\t%-#20.15g\t"
                                 "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t"
                                 "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t"
-                                "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\n",
+                                "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#2.6g\n",
                                 Rs,height,force1,force2,
                                 CA_s*180/pi,CA_p*180/pi,SA*180/pi,FA*180/pi,BA*180/pi,tilt*180/pi,
                                 total_energy,total_area,scale_val, body[1].volume,
                                 body[1].pressure,lower_length.value, 
                                 upper_length.value,lower_area.value,upper_area.value,mean_c.value,
-                                pin_angle*180/pi,angle6,angle7,angle8,angle9;
+                                pin_angle*180/pi,angle6,angle7,angle8,angle9,wetted_height,w_init;
                  /* save data */
                  printf "%s",dataline >> outname;
 
                 /* save dump file */
-                dump sprintf "%s%s_dump%03u-h%2.6g.dmp",outdir,data_name,inx,height;
+                dump sprintf "%s%s_dump-h%2.6g.dmp",outdir,data_name,height;
 
-            };
+//            };
             quiet off;
 
           }
@@ -765,7 +930,7 @@ get_fd := {
 //force-contact radius data        
 get_fr := {
     Rs_start := 1.5; Rs_end := 3.5; dr := 0.1; //SET CONTACT RADIUS SEQUENCE
-            outdir := "E:/Work/Surface Evolver/afm_pyramid/data/20210325_nps/height=0/"; //CHECK OUTPUT DIRECTORY
+    outdir := "E:/Work/Surface Evolver/afm_pyramid/data/20220307_rfesp_np_height0/"; //CHECK OUTPUT DIRECTORY
             data_name := sprintf "data-CA_p%2.6g-h%2.6g",CA_p*180/pi,height; //SET FILE NAME
             
             quiet on;        
@@ -781,7 +946,7 @@ get_fr := {
                     "Bottom_Angle\tTop_Angle\tSide_Angle\tFront_Angle\tBack_Angle\tTilt_Angle\t"
                    "Energy\tArea\tScale\tVolume\tPressure\tBottom_Length\t"
                    "Top_Length\tBottom_Area\tTop_Area\tMean_curvature\t"
-                   "Bottom_Angle_Calc\tTop_Angle6\tTop_Angle7\tTop_Angle8\tTop_Angle9\tAverage Wetted Height\n" >> outname;
+                   "Bottom_Angle_Calc\tTop_Angle6\tTop_Angle7\tTop_Angle8\tTop_Angle9\tAverage Wetted Height\tInitial_guess_height\n" >> outname;
 
             inx := 0;
             dataline := "";    
@@ -792,12 +957,73 @@ get_fr := {
                 change_Rs;
                 inx++;
                 
-                gogo2; //evolve
+            gogo3; //evolve
                 //set edge color clear where on_constraint 6 or on_constraint 7 or on_constraint 8 or on_constraint 9;            
 
                 compute_force; //calculate force
                 printf "%g\t%#2.3g\t%-#2.3g\t%-#2.3g\t%-#20.15g\n", 
                         Rs,pin_angle*180/pi,force1,force2,scale_val;    
+                    
+                dataline:= sprintf "%-#2.3g\t%-#2.6g\t%-#20.15g\t%-#20.15g\t"
+                                "%g\t%g\t%g\t%g\t%g\t%g\t"
+                                "%-#20.15g\t%-#20.15g\t"
+                                "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t"
+                                "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t"
+                                "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#2.6g\n",
+                                Rs,height,force1,force2,
+                                CA_s*180/pi,CA_p*180/pi,SA*180/pi,FA*180/pi,BA*180/pi,tilt*180/pi,
+                                total_energy,total_area,scale_val, body[1].volume,
+                                body[1].pressure,lower_length.value, 
+                                upper_length.value,lower_area.value,upper_area.value,mean_c.value,
+                                pin_angle*180/pi,angle6,angle7,angle8,angle9,wetted_height,w_init;
+                 /* save data */
+                 printf "%s",dataline >> outname;
+
+                /* save dump file */
+                dump sprintf "%s%s_dump%03u-Rs%2.6g.dmp",outdir,data_name,inx,Rs;
+
+            };
+            quiet off;
+
+          }
+
+//force-contact angle data (no pinning)        
+get_fa := {
+    angle_start := 15; angle_end := 120; dr := 15; //SET CONTACT ANGLE WITH TIP SEQUENCE
+            outdir := "E:/Work/Surface Evolver/afm_pyramid/data/20220118_rfesp_np_nopinning/"; //CHECK OUTPUT DIRECTORY
+            data_name := sprintf "data-CA_s%2.6g-h%2.6g",CA_s*180/pi,height; //SET FILE NAME
+            
+            quiet on;        
+            printf "Contact_angle:\tBottom_Angle:\tForce_Eng:\tForce_Calc:\tScale\n";
+               
+        num := 1+abs((angle_end-angle_start)/dr);
+        if angle_end > angle_start then {r_step := dr;} else {r_step := -dr;};
+
+            // save data            
+            outname := sprintf "%s%s-anglei%2.6g_anglef%2.6g.txt",outdir,
+            data_name,angle_start,angle_end;
+           printf "Contact_Radius\tHeight\tForce_Eng\tForce_Calc\t"
+                    "Bottom_Angle\tTop_Angle\tSide_Angle\tFront_Angle\tBack_Angle\tTilt_Angle\t"
+                   "Energy\tArea\tScale\tVolume\tPressure\tBottom_Length\t"
+                   "Top_Length\tBottom_Area\tTop_Area\tMean_curvature\t"
+                   "Bottom_Angle_Calc\tTop_Angle6\tTop_Angle7\tTop_Angle8\tTop_Angle9\tAverage Wetted Height\n" >> outname;
+
+            inx := 0;
+            dataline := "";    
+            while inx < num do
+            {   
+                replace_load datafilename;
+                new_angle := angle_start+inx*r_step;
+                CA_p := new_angle * pi/180;
+                recalc;
+                inx++;
+                
+                gogo2; //evolve
+                //set edge color clear where on_constraint 6 or on_constraint 7 or on_constraint 8 or on_constraint 9;            
+
+                compute_force; //calculate force
+                printf "%g\t%#2.3g\t%-#2.3g\t%-#2.3g\t%-#20.15g\n", 
+                CA_p,pin_angle*180/pi,force1,force2,scale_val;    
                     
                 dataline:= sprintf "%-#2.3g\t%-#2.6g\t%-#20.15g\t%-#20.15g\t"
                                 "%g\t%g\t%g\t%g\t%g\t%g\t"
@@ -815,7 +1041,7 @@ get_fr := {
                  printf "%s",dataline >> outname;
 
                 /* save dump file */
-                dump sprintf "%s%s_dump%03u-Rs%2.6g.dmp",outdir,data_name,inx,Rs;
+                dump sprintf "%s%s_dump%03u-angle%2.6g.dmp",outdir,data_name,inx,CA_p*180/pi;
 
             };
             quiet off;
