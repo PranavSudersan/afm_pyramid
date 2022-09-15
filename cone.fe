@@ -1,0 +1,547 @@
+//pyramid.fe
+// A triangular pyramid shaped tip in contact with a liquid drop
+//Center of bottom suubstrate is the origin of the coordinate system, vertically below the tip
+//Pyramid tip is at 'height' distance above surface
+//Contact angle of liquid with pyramid and bottom substrate are given by angle_p and angle_s respectively
+
+//COMMENT "height" ,"CA_p" an "Rs" PARAMETERS WHEN RUNNING fd_series SCRIPT! UNCOMMENT THEM WHEN RUNNING THIS FILE!
+//ALWAYS RERUN THIS FILE, THEN COMMENTS ABOVE PARAMETERS BEFORE RUNNING EXTERNAL SCRIPTS
+parameter height = 0 // distance of pyramid tip from surface
+parameter CA_p = 10 * pi/180 //liquid contact angle with pyramid tip
+parameter Rs = 2 //pinned radius at substrate (REMOVE CONTACT ANGLE ENERGY CONSTRAINT 1)
+parameter tip_angle = 15
+parameter cone_angle = tip_angle*pi/180 //deviation in pyramid geometry angle
+parameter tilt = 0 * pi/180 //tilt pyramid around x-axis
+
+parameter w_top =  3 //height of dummy pyramid (only for reference)
+//define initial value expression by trial and error for different CA_p value and fitting them
+parameter w_init = (2/Rs)-height//(((3.492e-5)*((CA_p*180/pi)^2))-(0.00814*(CA_p*180/pi))+0.914) - height  //initial wetted height of the pyramid
+
+parameter TENS = 1 //suface tension of liquid
+parameter CA_s = 30 * pi/180 //liquid contact angle with surface (REMOVE PINNED CONTACT ONSTRAINT 14)
+
+
+gravity_constant 0  // start with gravity off
+//scale_limit 0.1
+keep_macros
+
+//rotate display
+parameter alpha = 20*pi/180 //rotate view around z-axis
+parameter beta = 15*pi/180 //rotate view around y-axis
+parameter gamma = 0*pi/180 //rotate view around x-axis
+
+//rotation matrix (https://en.wikipedia.org/wiki/Rotation_matrix)
+view_matrix 
+cos(alpha)*cos(beta) cos(alpha)*sin(beta)*sin(gamma)-sin(alpha)*cos(gamma) cos(alpha)*sin(beta)*cos(gamma)+sin(alpha)*sin(gamma) 0
+sin(alpha)*cos(beta) sin(alpha)*sin(beta)*sin(gamma)+cos(alpha)*cos(gamma) sin(alpha)*sin(beta)*cos(gamma)-cos(alpha)*sin(gamma) 0
+-sin(beta) cos(beta)*sin(gamma) cos(beta)*cos(gamma) -1
+0 0 0 1.7
+
+//surface energy of substrate and pyramid
+#define TENS_s (-TENS*(cos(CA_s)))
+#define TENS_p (-TENS*(cos(CA_p)))
+#define Rc w_init*tan(cone_angle)
+#define Rct w_top*tan(cone_angle)
+
+/* COMPUTE QUANTITIES */
+
+quantity upper_length info_only method edge_scalar_integral  // top contact length
+scalar_integrand: 1
+
+quantity lower_length info_only method edge_scalar_integral  // bottom contaact length
+scalar_integrand: 1
+
+quantity upper_area info_only method edge_vector_integral  // top contact area WRONG!
+vector_integrand:
+q1: 0
+q2: x
+q3: 0
+
+quantity lower_area info_only method edge_vector_integral  // bottom contact area
+vector_integrand:
+q1: 0
+q2: x
+q3: 0
+
+quantity mean_c info_only method mean_curvature_integral  // mean curvature
+
+///* BOUNDARIES */
+//
+//boundary 1 parameters 1 convex// bottom pinned contact
+//x1: Rs * cos(p1)
+//x2: Rs * sin(p1)
+//x3: 0
+
+
+/* CONSTRAINTS */
+
+constraint 1   // substrate face
+formula: z = 0
+//energy: //uncomment to consider oontact angle CHECK! keep if pinning
+//e1: 0
+//e2: TENS_s * x
+//e3: 0
+
+constraint 2// pinning at substrate CHECK! remove if no pinning
+formula: x^2 + y^2 = Rs^2
+
+//cone tip plane constraints
+constraint 3// face 6
+formula: x^2 + y^2 = (z*tan(cone_angle))^2
+energy:
+e1: -TENS_p*y/2/sin(cone_angle)
+e2: TENS_p*x/2/sin(cone_angle)
+e3: 0//TENS_p*z/2/cos(cone_angle)
+content:
+c1: y*((x^2+y^2)^(0.5))/3/tan(cone_angle)
+c2: -x*((x^2+y^2)^(0.5))/3/tan(cone_angle)
+c3: 0//(z^2)*tan(cone_angle)/3
+
+constraint 4 // tip contact line
+formula: x^2 + y^2 = (z*tan(cone_angle))^2
+
+////keep liquid outside cone
+//constraint 5 nonnegative
+//formula: x^2 + y^2 - (z*tan(cone_angle))^2 = 0
+//
+////keep liquid above substrate
+//constraint 6 nonnegative 
+//formula: z
+
+
+// for restoring after perturbation
+define vertex attribute old_coord real[3]
+
+/* INITIAL SHAPE SPECIFICATION */
+
+
+Vertices
+//vertices of the low pad
+1  Rs*cos(0*pi/3)  Rs*sin(0*pi/3)  0   constraints 1,2 fixed
+2  Rs*cos(1*pi/3)  Rs*sin(1*pi/3)  0   constraints 1,2 fixed
+3  Rs*cos(2*pi/3)  Rs*sin(2*pi/3)  0   constraints 1,2 fixed
+4  Rs*cos(3*pi/3)  Rs*sin(3*pi/3)  0   constraints 1,2 fixed
+5  Rs*cos(4*pi/3)  Rs*sin(4*pi/3)  0   constraints 1,2 fixed
+6  Rs*cos(5*pi/3)  Rs*sin(5*pi/3)  0   constraints 1,2 fixed
+// vertices of the up pad
+7  Rc*cos(0*pi/3)  Rc*sin(0*pi/3)  w_init+height  constraint 3
+8  Rc*cos(1*pi/3)  Rc*sin(1*pi/3)  w_init+height  constraint 3
+9  Rc*cos(2*pi/3)  Rc*sin(2*pi/3)  w_init+height  constraint 3 
+10 Rc*cos(3*pi/3)  Rc*sin(3*pi/3)  w_init+height  constraint 3 
+11 Rc*cos(4*pi/3)  Rc*sin(4*pi/3)  w_init+height  constraint 3 
+12 Rc*cos(5*pi/3)  Rc*sin(5*pi/3)  w_init+height  constraint 3 
+
+//to show the lower half sphere
+20 Rct*cos(0*pi/3)  Rct*sin(0*pi/3)  w_top+height  constraint 4 fixed
+21 Rct*cos(1*pi/3)  Rct*sin(1*pi/3)  w_top+height  constraint 4 fixed
+22 Rct*cos(2*pi/3)  Rct*sin(2*pi/3)  w_top+height  constraint 4 fixed
+23 Rct*cos(3*pi/3)  Rct*sin(3*pi/3)  w_top+height  constraint 4 fixed
+24 Rct*cos(4*pi/3)  Rct*sin(4*pi/3)  w_top+height  constraint 4 fixed
+25 Rct*cos(5*pi/3)  Rct*sin(5*pi/3)  w_top+height  constraint 4 fixed
+26  0             0         0            fixed constraint 4
+
+Edges
+//the edges of the lower pad
+1    1  2  constraints 1,2 lower_length lower_area mean_c  fixed
+2    2  3  constraints 1,2 lower_length lower_area mean_c  fixed
+3    3  4  constraints 1,2 lower_length lower_area mean_c  fixed
+4    4  5  constraints 1,2 lower_length lower_area mean_c  fixed
+5    5  6  constraints 1,2 lower_length lower_area mean_c  fixed
+6    6  1  constraints 1,2 lower_length lower_area mean_c  fixed
+//outside edges of the upper pad
+7    7  8   constraint 3 upper_length upper_area mean_c 
+8    8  9   constraint 3 upper_length upper_area mean_c
+9    9  10  constraint 3 upper_length upper_area mean_c  
+10   10 11  constraint 3 upper_length upper_area mean_c  
+11   11 12  constraint 3 upper_length upper_area mean_c  
+12   12 7   constraint 3 upper_length upper_area mean_c
+//the vertical edges
+13   1  7
+14   2  8
+15   3  9
+16   4  10
+17   5  11
+18   6  12
+
+//to show the low half sphere
+37  20 21  constraint 4 fixed 
+38  21 22  constraint 4 fixed 
+39  22 23  constraint 4 fixed 
+40  23 24  constraint 4 fixed 
+41  24 25  constraint 4 fixed
+42  25 20  constraint 4 fixed
+43  20 26  constraint 4 fixed
+44  21 26  constraint 4 fixed
+45  22 26  constraint 4 fixed
+46  23 26  constraint 4 fixed
+47  24 26  constraint 4 fixed
+48  25 26  constraint 4 fixed
+
+Faces
+// defined by oriented edge loops to have outward normal
+// the vertical faces
+1   1 14  -7 -13 tension TENS color yellow
+2   2 15  -8 -14 tension TENS color yellow
+3   3 16  -9 -15 tension TENS color yellow
+4   4 17 -10 -16 tension TENS color yellow
+5   5 18 -11 -17 tension TENS color yellow
+6   6 13 -12 -18 tension TENS color yellow
+//to show the low half sphere
+19   37  44 -43    constraint 4 color red tension 0  fixed
+20   38  45 -44    constraint 4 color red tension 0  fixed
+21   39  46 -45    constraint 4 color red tension 0  fixed
+22   40  47 -46    constraint 4 color red tension 0  fixed
+23   41  48 -47    constraint 4 color red tension 0  fixed
+24   42  43 -48    constraint 4 color red tension 0  fixed
+
+//to show the bottom of the low pad
+//25   -6 -5 -4 -3 -2 -1 constraints 1 no_refine color green tension 0 fixed
+
+Bodies // defined by oriented face list
+1  1 2 3 4 5 6  volume 4*pi/3 density 1
+
+    
+//----------------------SCRIPT----------------------//
+
+read
+
+hessian_normal
+unfix vertex where id>=7 and id<=12 // were fixed by being on fixed edges
+//t .01 // get rid of some stuff
+
+// do this to stop red sphere refining
+fixred := { set facet no_refine where color == red;
+            set edge ee no_refine where max(ee.facet,color==red) == 1;
+          }
+
+  
+//clear edge lines of fluid
+clear_lines := {
+    set edge color clear where on_constraint 4;
+                }
+
+//compute contact angle of liquid at pinned contact line
+compute_angle_bottom := {
+    angle_sum := 0;
+    ind := 0;
+    foreach vertex vv where on_constraint 1 do
+        {   
+            if vv.vertex_normal[1]*vv.x > 0 or vv.vertex_normal[2]*vv.y > 0 then 
+            {angle_sum := angle_sum+acos(vv.vertex_normal[3]);}
+            else
+            {angle_sum := angle_sum-acos(vv.vertex_normal[3]);};
+            ind++;
+        };
+        pin_angle := (angle_sum/ind);//take average
+        //print pin_angle*180/pi;
+        }
+
+//TODO: check angles
+//compute contact angle of liquid top contact line with z axis
+function real get_angle(real c_num) //c_num: constraint number of edge
+    {
+    angle_sum := 0;
+    ind := 0;
+    foreach edge ee where on_quantity upper_length do
+        {   
+            angle_temp := acos(ee.vertices[1].vertex_normal[3]);
+            if ee.vertices[1].vertex_normal[1]*ee.vertices[1].x > 0 or ee.vertices[1].vertex_normal[2]*ee.vertices[1].y > 0 then 
+            {angle_sum := angle_sum + angle_temp;}
+            else
+            {angle_sum := angle_sum - angle_temp;};
+            ind++;
+        };
+    angle1 := (angle_sum/ind)*180/pi;//take average
+    //print angle1*180/pi;
+    return angle1;
+//    angle_sum := 0;
+//    ind := 0;
+//    foreach facet ff where on_constraint c_num do
+//        {   
+//            angle_temp := acos(ff.vertices[1].vertex_normal[3]);
+//            if ff.vertices[1].vertex_normal[1]*ff.vertices[1].x > 0 or ff.vertices[1].vertex_normal[2]*ff.vertices[1].y > 0 then 
+//            {angle_sum := angle_sum + angle_temp;}
+//            else
+//            {angle_sum := angle_sum - angle_temp;};
+//            ind++;
+//        };
+//        angle2 := (angle_sum/ind);//take average
+//        print angle2*180/pi;
+//        
+//    top_angle := (angle2 - angle1)*180/pi;
+//    print top_angle;
+//    return top_angle;
+        
+        }
+
+
+compute_angle_top := {
+    angle_sum := 0;
+    ind := 0;
+    foreach edge ee where on_constraint 3 do
+        {   
+            angle_temp := acos(ee.vertices[1].vertex_normal[3]);
+            if ee.vertices[1].vertex_normal[1]*ee.vertices[1].x > 0 or ee.vertices[1].vertex_normal[2]*ee.vertices[1].y > 0 then 
+            {angle_sum := angle_sum + angle_temp;}
+            else
+            {angle_sum := angle_sum - angle_temp;};
+            ind++;
+        };
+        angle_avg := (angle_sum/ind)*180/pi;//take average
+        angle_top := 90 + (cone_angle*180/pi) - (angle_avg) + (tilt*180/pi); //contact angle
+    print angle_top;
+                      }
+
+compute_wetted_height := {
+    h1 := max(vertices where on_constraint 3,z);
+    wetted_height := h1-height; //average wetted height
+                            }
+
+//change height
+new_height := height //set new_height and run change_height
+change_height := { old_height := height; dz := new_height - old_height; height := new_height;
+    set vertex z z+dz where z > 0 and (not on_constraint 6 and not on_constraint 7 and not on_constraint 8 and not on_constraint 9);
+    set vertex z z*(new_height+w_init)/(old_height+w_init) where on_constraint 6 or on_constraint 7 or on_constraint 8 or on_constraint 9;
+               recalc;
+             }
+
+           
+//change Rs (bottom pin radius)
+new_Rs := Rs //set new_Rs and run change_Rs
+change_Rs := { dRs := (new_Rs - Rs)/(2*sqrt(2)); Rs := new_Rs;
+               set vertex y y-dRs where on_constraint 6;
+               set vertex x x+dRs where on_constraint 7;
+               set vertex y y+dRs where on_constraint 8;
+               set vertex x x-dRs where on_constraint 9;
+               recalc;
+             }       
+
+//special refine routines       
+re := { refine edges where on_constraint 1;}
+
+re_top := { refine edges where on_constraint 3;}
+        
+//refine top facets    
+re_top2 := {foreach edge ee where on_quantity upper_length do 
+    {refine ee.facets;};
+         }
+
+//refine bottom facets    
+re_bottom := {foreach edge ee where on_quantity lower_length do 
+    {refine ee.facets;};
+         }
+
+//refine top face edges
+re_top3 := { 
+    foreach vertices vv where on_constraint 3  do {
+        //printf "%g %g %g\\n",x,y,z; 
+    refine vv.edges where length == max(vv.edges,length);
+    }; 
+         }
+
+//refine top large faces 
+re_top4 := {
+    foreach vertices vv where on_constraint 3 do {
+        //printf "%g %g %g\\n",x,y,z; //list vv.facets; 
+        foreach vv.facets ff do {
+            vv_count := count(ff.edges where not on_quantity upper_length, id);
+            if vv_count == 3 then {refine ff;};
+                }; 
+            }; 
+    }
+
+
+//refine edge where length > .0048 and not no_refine;
+
+//Evolve scripts
+
+// a typical evolution
+gogo0 := { edgeswap edge where id >= 13 and id <= 18;
+          g 5; 
+          r;
+          g 5; V; g 5; V; g 5;
+          r;
+          g 22;
+          fixred; compute_angle_top; 
+        }
+      
+gogo1 := {re;
+        g5; r; g10; r; g20; r; g40; r; u; g100;
+        scale_val := scale;
+        compute_angle_top; compute_angle_bottom;
+        compute_wetted_height;
+        }
+
+//better evolve routine (BEST FOR CONE)
+gogo2 := {edgeswap edge where id >= 13 and id <= 18; 
+         re_top4; re; g5; 
+         {r; u; V; g 20;} 4;
+         U;g100;U;
+         r; u; V; g 10; 
+         //hessian;hessian;hessian;
+         U;g10;U;  
+        scale_val := scale;
+        compute_angle_top; compute_angle_bottom;
+        compute_wetted_height;
+        clear_lines;
+        }
+
+//use for small Rs    
+gogo3 := {re;re_top3; re_bottom;re;re_top2;g30; 
+    {r; u; V; g 10;} 3; {r; V;U;g50;U;} 1;//re_top3; u; V;
+    //g1000;
+    V;U;g100;U;
+        scale_val := scale;
+        compute_angle_top; compute_angle_bottom;
+        compute_wetted_height;
+        }
+
+//use for large Rs
+gogo5 := {re_bottom;re;re_top3; re_top4;re_top3; re_top4;re_top2;re_bottom;re;g100;re_top; 
+    {r; u; V; g 100;} 3;//re_bottom;re;{r; u; V; g 100;} 2;//re_top;{r;u;V;g100;} 1;//re_top3; u; V;
+    //g1000;
+    U;g300;U;
+        scale_val := scale;
+        compute_angle_top; compute_angle_bottom;
+        compute_wetted_height;
+        }
+
+//use for small Rs
+gogo6 := {g; re_bottom;re;re_top3; re_top4;re_top3; re_top4;re_top2;re_bottom;re;g100;re_top; 
+    {r; u; V; g 100;} 3;//re_bottom;re;{r; u; V; g 100;} 2;//re_top;{r;u;V;g100;} 1;//re_top3; u; V;
+    //g1000;
+    U;g300;U;
+        scale_val := scale;
+        compute_angle_top; compute_angle_bottom;
+        compute_wetted_height;
+        }
+    
+gogo4 := {re; g5; 
+        {r; u; V; g 20;} 3;
+        u; V; U; g10; U; u; V; g100; U;g200;U;
+        scale_val := scale;
+        compute_angle_top; compute_angle_bottom;
+        compute_wetted_height;
+        }
+
+
+
+// For saving coordinates before perturbation
+save_coords := { foreach vertex vv do
+                    { set vv.old_coord[1] x;
+                      set vv.old_coord[2] y;
+                      set vv.old_coord[3] z;
+                    }
+                }
+
+// For restoring coordinates after perturbation
+restore_coords := { foreach vertex vv do
+                       { set vv.x old_coord[1];
+                         set vv.y old_coord[2];
+                         set vv.z old_coord[3];
+                        }
+                   }
+
+// Force by central difference of energy minima
+compute_force := { 
+                /*force calculated by pressure and angle at bottom surface*/
+                force2 := (((body[1].pressure-ambient_pressure_value)*lower_area.value)- 
+                (lower_length.value*sin(pin_angle)))/2/pi; //bottom 
+                force1 := (((body[1].pressure-ambient_pressure_value)*upper_area.value)- 
+                (upper_length.value*cos(abs((angle_top*pi/180)-cone_angle))))/2/pi; //top  
+//                save_coords;
+//                dheight := 0.001;
+//                //new_height := height - dheight;
+//                //change_height;
+//                set vertex z z-dheight where not on_constraint 1;
+//                height := height - dheight;
+//                optimize 1; 
+//                g10;
+//                lo_energy := total_energy;
+//                restore_coords;
+//                //new_height := height + 2*dheight;
+//                //change_height;
+//                set vertex z z+(2*dheight) where not on_constraint 1;
+//                height := height + (2*dheight);
+//                g10;
+//                hi_energy := total_energy;
+//                restore_coords;
+//                height := height - dheight;
+//                //change_height;
+//                force1 := -(hi_energy - lo_energy)/2/dheight/2/pi;
+                
+                /*force1a := -(hi_energy - lo_energy)/2/dheight;*/
+                
+            }
+
+ 
+
+//force-distance data        
+get_fd := {
+    //height_start := 0.001; height_end := 0.4; dh := 0.02; //SET HEIGHT SEQUENCE CHECK!
+    outdir := sprintf "E:/Work/Surface Evolver/afm_pyramid/data/20220906_cone_sym_height0_ca10/";//TA_%0.0f/",a_dev; //CHECK OUTPUT DIRECTORY
+    data_name := sprintf "data-CA_p%2.6g-TA_%0.0f",CA_p*180/pi,cone_angle*180/pi; //SET FILE NAME
+            
+            quiet on;        
+            printf "Contact_Radius:\tBottom_Angle:\tForce_Eng:\tForce_Calc:\tScale\n";
+               
+//            num := 1+abs((height_end-height_start)/dh);
+//            if height_end > height_start then {h_step := dh;} else {h_step := -dh;};
+
+            // save data            
+            outname := sprintf "%s%s.txt",outdir,data_name;
+            
+        if Rs == 1.0 then {printf "Contact_Radius\tHeight\tForce_Eng\tForce_Calc\t"
+            "Bottom_Angle\tTop_Angle\tCone_Angle\tTilt_Angle\t"
+            "Energy\tArea\tScale\tVolume\tPressure\tBottom_Length\t"
+        "Top_Length\tBottom_Area\tTop_Area\tMean_curvature\t"
+    "Bottom_Angle_Calc\tTop_Angle_Calc\tAverage Wetted Height\tInitial_guess_height\n">> outname;} 
+            else {printf "";};
+//                   printf "Contact_Radius\tHeight\tForce_Eng\tForce_Calc\t"
+//                            "Bottom_Angle\tTop_Angle\tSide_Angle\tFront_Angle\tBack_Angle\tTilt_Angle\t"
+//                           "Energy\tArea\tScale\tVolume\tPressure\tBottom_Length\t"
+//                           "Top_Length\tBottom_Area\tTop_Area\tMean_curvature\t"
+//                           "Bottom_Angle_Calc\tTop_Angle6\tTop_Angle7\tTop_Angle8\tTop_Angle9\n" >> outname;) 
+//                           else {printf ".";}};
+
+//            inx := 0;
+            dataline := "";    
+//            while inx < num do
+//            {   
+//                replace_load datafilename;
+//                new_height := height_start+inx*h_step;
+//                change_height;
+//                inx++;
+                
+gogo2; //evolve routine
+                //set edge color clear where on_constraint 6 or on_constraint 7 or on_constraint 8 or on_constraint 9;            
+
+            //force1 := 0;
+            //force2 := 0;
+            compute_force; //calculate force
+                printf "%g\t%#2.3g\t%-#2.3g\t%-#2.3g\t%-#20.15g\n", 
+                        height,pin_angle*180/pi,force1,force2,scale_val;    
+                    
+                dataline:= sprintf "%-#2.3g\t%-#2.6g\t%-#20.15g\t%-#20.15g\t"
+                                "%g\t%g\t%g\t%g\t"
+                                "%-#20.15g\t%-#20.15g\t"
+                                "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t"
+                                "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t"
+                                "%-#20.15g\t%-#20.15g\t%-#2.6g\n",
+                                Rs,height,force1,force2,
+                                CA_s*180/pi,CA_p*180/pi,cone_angle*180/pi,tilt*180/pi,
+                                total_energy,total_area,scale_val, body[1].volume,
+                                body[1].pressure,lower_length.value, 
+                                upper_length.value,lower_area.value,upper_area.value,mean_c.value,
+                                pin_angle*180/pi,angle_top,wetted_height,w_init;
+                 /* save data */
+                 printf "%s",dataline >> outname;
+
+                /* save dump file */
+                dump sprintf "%s%s_dump-Rs%0.3f.dmp",outdir,data_name,Rs;
+
+//            };
+            quiet off;
+
+          }
+
