@@ -7,16 +7,16 @@
 //COMMENT "height" ,"CA_p" an "Rs" PARAMETERS WHEN RUNNING fd_series SCRIPT! UNCOMMENT THEM WHEN RUNNING THIS FILE!
 //ALWAYS RERUN THIS FILE, THEN COMMENTS ABOVE PARAMETERS BEFORE RUNNING EXTERNAL SCRIPTS
 parameter height = 0 // distance of pyramid tip from surface
-parameter CA_p = 30 * pi/180 //liquid contact angle with pyramid tip
-parameter Rs = 3.0 //pinned radius at substrate (REMOVE CONTACT ANGLE ENERGY CONSTRAINT 1)
-parameter a_dev = 20 //deviation in pyramid geometry angle
+parameter CA_p = 10 * pi/180 //liquid contact angle with pyramid tip
+parameter Rs = 2.0 //pinned radius at substrate (REMOVE CONTACT ANGLE ENERGY CONSTRAINT 1)
+parameter a_dev = 10 //deviation in pyramid geometry angle
 
 parameter w_top =  3 //height of dummy pyramid (only for reference)
 //define initial value expression by trial and error for different CA_p value and fitting them
 parameter w_init = (2/Rs)-height//(((3.492e-5)*((CA_p*180/pi)^2))-(0.00814*(CA_p*180/pi))+0.914) - height  //initial wetted height of the pyramid
 
 
-parameter SA = 17.5 * pi/180 //Side angle of pyramid 17.5
+parameter SA = (0 + a_dev) * pi/180 //Side angle of pyramid 17.5
 parameter FA = (0 + a_dev) * pi/180 //Front angle of pyramid 15
 parameter BA = (0 + a_dev) * pi/180 //Back angle of pyramid 25
 parameter tilt = 0 * pi/180 //tilt pyramid around x-axis
@@ -49,6 +49,18 @@ sin(alpha)*cos(beta) sin(alpha)*sin(beta)*sin(gamma)+cos(alpha)*cos(gamma) sin(a
 /* COMPUTE QUANTITIES */
 
 quantity upper_length info_only method edge_scalar_integral  // top contact length
+scalar_integrand: 1
+
+quantity upper_length6 info_only method edge_scalar_integral  // top contact length
+scalar_integrand: 1
+
+quantity upper_length7 info_only method edge_scalar_integral  // top contact length
+scalar_integrand: 1
+
+quantity upper_length8 info_only method edge_scalar_integral  // top contact length
+scalar_integrand: 1
+
+quantity upper_length9 info_only method edge_scalar_integral  // top contact length
 scalar_integrand: 1
 
 quantity lower_length info_only method edge_scalar_integral  // bottom contaact length
@@ -424,14 +436,14 @@ edges
 2 2 3 constraint 1,14 lower_length lower_area mean_c
 3 3 4 constraint 1,14 lower_length lower_area mean_c
 4 4 1 constraint 1,14 lower_length lower_area mean_c
-5 5 55 constraint 2,16,18 upper_length upper_area mean_c //pyramid top contact line
-55 55 6 constraint 25,16,18 upper_length upper_area mean_c
-6 6 65 constraint 3,15,17 upper_length upper_area mean_c
-65 65 7 constraint 35,15,17 upper_length upper_area mean_c
-7 7 75 constraint 4,16,18 upper_length upper_area mean_c
-75 75 8 constraint 45,16,18 upper_length upper_area mean_c
-8 8 85 constraint 5,15,17 upper_length upper_area mean_c
-85 85 5 constraint 55,15,17 upper_length upper_area mean_c
+5 5 55 constraint 2,16,18 upper_length6 upper_length upper_area mean_c //pyramid top contact line
+55 55 6 constraint 25,16,18 upper_length6 upper_length upper_area mean_c
+6 6 65 constraint 3,15,17 upper_length7 upper_length upper_area mean_c
+65 65 7 constraint 35,15,17 upper_length7 upper_length upper_area mean_c
+7 7 75 constraint 4,16,18 upper_length8 upper_length upper_area mean_c
+75 75 8 constraint 45,16,18 upper_length8 upper_length upper_area mean_c
+8 8 85 constraint 5,15,17 upper_length9 upper_length upper_area mean_c
+85 85 5 constraint 55,15,17 upper_length9 upper_length upper_area mean_c
 9 1 5 constraint 13,9,6 mean_c//liquid-air interface
 10 2 6 constraint 13,6,7 mean_c
 11 3 7 constraint 13,7,8 mean_c
@@ -729,10 +741,10 @@ compute_force := {
                 force2 := (((body[1].pressure-ambient_pressure_value)*lower_area.value)- 
                             (lower_length.value*sin(pin_angle)))/2/pi;
                 force1 := (((body[1].pressure-ambient_pressure_value)*upper_area.value)- 
-                (upper_length.value/4*cos(abs((angle6*pi/180)-FA)))-
-                (upper_length.value/4*cos(abs((angle7*pi/180)-SA)))-
-                (upper_length.value/4*cos(abs((angle8*pi/180)-BA)))-
-                (upper_length.value/4*cos(abs((angle9*pi/180)-SA))))/2/pi; //top
+                (upper_length6.value*cos(abs((angle6*pi/180)-FA)))-
+                (upper_length7.value*cos(abs((angle7*pi/180)-SA)))-
+                (upper_length8.value*cos(abs((angle8*pi/180)-BA)))-
+                (upper_length9.value*cos(abs((angle9*pi/180)-SA))))/2/pi; //top
 //                save_coords;
 //                dheight := 0.001;
 //                //new_height := height - dheight;
@@ -776,7 +788,7 @@ get_fd := {
             outname := sprintf "%s%s.txt",outdir,data_name;
             
         if Rs == 1.0 then {printf "Contact_Radius\tHeight\tForce_Eng\tForce_Calc\t"
-            "Bottom_Angle\tTop_Angle\tSide_Angle\tFront_Angle\tBack_Angle\tTilt_Angle\t"
+            "Bottom_Angle\tTop_Angle\tSide_Angle\tFront_Angle\tBack_Angle\tCone_Angle\tTilt_Angle\t"
             "Energy\tArea\tScale\tVolume\tPressure\tBottom_Length\t"
         "Top_Length\tBottom_Area\tTop_Area\tMean_curvature\t"
     "Bottom_Angle_Calc\tTop_Angle6\tTop_Angle7\tTop_Angle8\tTop_Angle9\tAverage Wetted Height\tInitial_guess_height\n">> outname;} 
@@ -807,13 +819,13 @@ gogo5; //evolve routine
                         height,pin_angle*180/pi,force1,force2,scale_val;    
                     
                 dataline:= sprintf "%-#2.3g\t%-#2.6g\t%-#20.15g\t%-#20.15g\t"
-                                "%g\t%g\t%g\t%g\t%g\t%g\t"
+                                "%g\t%g\t%g\t%g\t%g\t%g\t%g\t"
                                 "%-#20.15g\t%-#20.15g\t"
                                 "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t"
                                 "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t"
                                 "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#2.6g\n",
                                 Rs,height,force1,force2,
-                                CA_s*180/pi,CA_p*180/pi,SA*180/pi,FA*180/pi,BA*180/pi,tilt*180/pi,
+                                CA_s*180/pi,CA_p*180/pi,SA*180/pi,FA*180/pi,BA*180/pi,a_dev,tilt*180/pi,
                                 total_energy,total_area,scale_val, body[1].volume,
                                 body[1].pressure,lower_length.value, 
                                 upper_length.value,lower_area.value,upper_area.value,mean_c.value,
