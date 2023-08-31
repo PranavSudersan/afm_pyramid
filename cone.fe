@@ -6,12 +6,20 @@
 
 //COMMENT "height" ,"CA_p" an "Rs" PARAMETERS WHEN RUNNING fd_series SCRIPT! UNCOMMENT THEM WHEN RUNNING THIS FILE!
 //ALWAYS RERUN THIS FILE, THEN COMMENTS ABOVE PARAMETERS BEFORE RUNNING EXTERNAL SCRIPTS
-parameter height = 0 // distance of pyramid tip from surface
-parameter CA_p = 10 * pi/180 //liquid contact angle with pyramid tip
-parameter Rs = 2 //pinned radius at substrate (REMOVE CONTACT ANGLE ENERGY CONSTRAINT 1)
-parameter tip_angle = 15
+//parameter height_norm = 0.7 // distance of pyramid tip from surface (normalized wrt drop height, h/d)
+//parameter CA_p = 10 * pi/180 //liquid contact angle with pyramid tip
+//parameter Rs_norm = 3 //pinned radius at substrate, R/d (REMOVE CONTACT ANGLE ENERGY CONSTRAINT 1)
+//parameter tip_angle = 15
+
 parameter cone_angle = tip_angle*pi/180 //deviation in pyramid geometry angle
 parameter tilt = 0 * pi/180 //tilt pyramid around x-axis
+
+parameter s_norm = 0.5*(1+(3*(Rs_norm)^2))^(1/3) //s/d, where V=4/3pi s^3 is drop volume
+parameter Rs = Rs_norm/s_norm //pinned radius at substrate R/s (normalized w.r.t. drop volume
+//parameter drop_height = ((sqrt((Rs^6) + 16) + 4)^(1/3)) - ((Rs^2)/(sqrt((Rs^6) + 16) + 4)^(1/3))
+//parameter height = height_norm*drop_height // distance of pyramid tip from surface (normalized wrt drop volume)
+parameter height = height_norm/s_norm // distance of pyramid tip from surface (normalized wrt drop volume)
+
 
 parameter w_top =  3 //height of dummy pyramid (only for reference)
 //define initial value expression by trial and error for different CA_p value and fitting them
@@ -87,7 +95,7 @@ formula: x^2 + y^2 = Rs^2
 
 //cone tip plane constraints
 constraint 3// face 6
-formula: x^2 + y^2 = (z*tan(cone_angle))^2
+formula: x^2 + y^2 = ((z-height)*tan(cone_angle))^2
 energy:
 e1: -TENS_p*y/2/sin(cone_angle)
 e2: TENS_p*x/2/sin(cone_angle)
@@ -98,7 +106,7 @@ c2: -x*((x^2+y^2)^(0.5))/3/tan(cone_angle)
 c3: 0//(z^2)*tan(cone_angle)/3
 
 constraint 4 // tip contact line
-formula: x^2 + y^2 = (z*tan(cone_angle))^2
+formula: x^2 + y^2 = ((z-height)*tan(cone_angle))^2
 
 ////keep liquid outside cone
 //constraint 5 nonnegative
@@ -138,7 +146,7 @@ Vertices
 23 Rct*cos(3*pi/3)  Rct*sin(3*pi/3)  w_top+height  constraint 4 fixed
 24 Rct*cos(4*pi/3)  Rct*sin(4*pi/3)  w_top+height  constraint 4 fixed
 25 Rct*cos(5*pi/3)  Rct*sin(5*pi/3)  w_top+height  constraint 4 fixed
-26  0             0         0            fixed constraint 4
+26  0             0         height            fixed //constraint 4
 
 Edges
 //the edges of the lower pad
@@ -298,12 +306,12 @@ compute_wetted_height := {
                             }
 
 //change height
-new_height := height //set new_height and run change_height
-change_height := { old_height := height; dz := new_height - old_height; height := new_height;
-    set vertex z z+dz where z > 0 and (not on_constraint 6 and not on_constraint 7 and not on_constraint 8 and not on_constraint 9);
-    set vertex z z*(new_height+w_init)/(old_height+w_init) where on_constraint 6 or on_constraint 7 or on_constraint 8 or on_constraint 9;
-               recalc;
-             }
+//new_height := height //set new_height and run change_height
+//change_height := { old_height := height; dz := new_height - old_height; height := new_height;
+//    set vertex z z+dz where z > 0 and (not on_constraint 6 and not on_constraint 7 and not on_constraint 8 and not on_constraint 9);
+//    set vertex z z*(new_height+w_init)/(old_height+w_init) where on_constraint 6 or on_constraint 7 or on_constraint 8 or on_constraint 9;
+//               recalc;
+//             }
 
            
 //change Rs (bottom pin radius)
@@ -479,7 +487,7 @@ compute_force := {
 //force-distance data        
 get_fd := {
     //height_start := 0.001; height_end := 0.4; dh := 0.02; //SET HEIGHT SEQUENCE CHECK!
-    outdir := sprintf "E:/Work/Surface Evolver/afm_pyramid/data/20220906_cone_sym_height0_ca10/";//TA_%0.0f/",a_dev; //CHECK OUTPUT DIRECTORY
+    outdir := sprintf "E:/Work/Surface Evolver/afm_pyramid/data/20221028_cone_fd/TA_%0.0f/Rd_%0.1f/",tip_angle,Rs_norm; //CHECK OUTPUT DIRECTORY
     data_name := sprintf "data-CA_p%2.6g-TA_%0.0f",CA_p*180/pi,cone_angle*180/pi; //SET FILE NAME
             
             quiet on;        
@@ -491,11 +499,11 @@ get_fd := {
             // save data            
             outname := sprintf "%s%s.txt",outdir,data_name;
             
-        if Rs == 1.0 then {printf "Contact_Radius\tHeight\tForce_Eng\tForce_Calc\t"
+        if height == 0.0 then {printf "Contact_Radius\tContact_Radius_norm\tHeight\tHeight_norm\tForce_Eng\tForce_Calc\t"
             "Bottom_Angle\tTop_Angle\tCone_Angle\tTilt_Angle\t"
             "Energy\tArea\tScale\tVolume\tPressure\tBottom_Length\t"
         "Top_Length\tBottom_Area\tTop_Area\tMean_curvature\t"
-    "Bottom_Angle_Calc\tTop_Angle_Calc\tAverage Wetted Height\tInitial_guess_height\n">> outname;} 
+    "Bottom_Angle_Calc\tTop_Angle_Calc\tAverage Wetted Height\tInitial_guess_height\ts_norm\n">> outname;} 
             else {printf "";};
 //                   printf "Contact_Radius\tHeight\tForce_Eng\tForce_Calc\t"
 //                            "Bottom_Angle\tTop_Angle\tSide_Angle\tFront_Angle\tBack_Angle\tTilt_Angle\t"
@@ -520,25 +528,25 @@ gogo2; //evolve routine
             //force2 := 0;
             compute_force; //calculate force
                 printf "%g\t%#2.3g\t%-#2.3g\t%-#2.3g\t%-#20.15g\n", 
-                        height,pin_angle*180/pi,force1,force2,scale_val;    
+                        height_norm,pin_angle*180/pi,force1,force2,scale_val;    
                     
-                dataline:= sprintf "%-#2.3g\t%-#2.6g\t%-#20.15g\t%-#20.15g\t"
+                dataline:= sprintf "%-#2.3g\t%-#2.3g\t%-#2.6g\t%-#2.6g\t%-#20.15g\t%-#20.15g\t"
                                 "%g\t%g\t%g\t%g\t"
                                 "%-#20.15g\t%-#20.15g\t"
                                 "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t"
                                 "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t"
-                                "%-#20.15g\t%-#20.15g\t%-#2.6g\n",
-                                Rs,height,force1,force2,
+                                "%-#20.15g\t%-#20.15g\t%-#2.6g\t%-#20.15g\n",
+                                Rs,Rs_norm,height,height_norm,force1,force2,
                                 CA_s*180/pi,CA_p*180/pi,cone_angle*180/pi,tilt*180/pi,
                                 total_energy,total_area,scale_val, body[1].volume,
                                 body[1].pressure,lower_length.value, 
                                 upper_length.value,lower_area.value,upper_area.value,mean_c.value,
-                                pin_angle*180/pi,angle_top,wetted_height,w_init;
+                                pin_angle*180/pi,angle_top,wetted_height,w_init,s_norm;
                  /* save data */
                  printf "%s",dataline >> outname;
 
                 /* save dump file */
-                dump sprintf "%s%s_dump-Rs%0.3f.dmp",outdir,data_name,Rs;
+                dump sprintf "%s%s_dump-Rs%0.3f-height_%0.3f.dmp",outdir,data_name,Rs_norm,height_norm;
 
 //            };
             quiet off;

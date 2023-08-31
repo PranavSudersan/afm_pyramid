@@ -6,19 +6,24 @@
 
 //COMMENT "height" ,"CA_p" an "Rs" PARAMETERS WHEN RUNNING fd_series SCRIPT! UNCOMMENT THEM WHEN RUNNING THIS FILE!
 //ALWAYS RERUN THIS FILE, THEN COMMENTS ABOVE PARAMETERS BEFORE RUNNING EXTERNAL SCRIPTS
-parameter height = 0 // distance of pyramid tip from surface
+parameter height_norm = 0 // distance of pyramid tip from surface
 parameter CA_p = 10 * pi/180 //liquid contact angle with pyramid tip
-parameter Rs = 2.0 //pinned radius at substrate (REMOVE CONTACT ANGLE ENERGY CONSTRAINT 1)
-parameter a_dev = 10 //deviation in pyramid geometry angle
+parameter Rs_norm = 2.0 //pinned radius at substrate (REMOVE CONTACT ANGLE ENERGY CONSTRAINT 1)
+parameter tip_angle = 15
+//parameter a_dev = 10 //deviation in pyramid geometry angle
+
+parameter s_norm = 0.5*(1+(3*(Rs_norm)^2))^(1/3) //s/d, where V=4/3pi s^3 is drop volume
+parameter Rs = Rs_norm/s_norm //pinned radius at substrate R/s (normalized w.r.t. drop volume
+parameter height = height_norm/s_norm // distance of pyramid tip from surface (normalized wrt drop volume)
 
 parameter w_top =  3 //height of dummy pyramid (only for reference)
 //define initial value expression by trial and error for different CA_p value and fitting them
 parameter w_init = (2/Rs)-height//(((3.492e-5)*((CA_p*180/pi)^2))-(0.00814*(CA_p*180/pi))+0.914) - height  //initial wetted height of the pyramid
 
 
-parameter SA = (0 + a_dev) * pi/180 //Side angle of pyramid 17.5
-parameter FA = (0 + a_dev) * pi/180 //Front angle of pyramid 15
-parameter BA = (0 + a_dev) * pi/180 //Back angle of pyramid 25
+parameter SA = tip_angle * pi/180 //Side angle of pyramid 17.5
+parameter FA = tip_angle * pi/180 //Front angle of pyramid 15
+parameter BA = tip_angle * pi/180 //Back angle of pyramid 25
 parameter tilt = 0 * pi/180 //tilt pyramid around x-axis
 
 
@@ -775,9 +780,8 @@ compute_force := {
 //force-distance data        
 get_fd := {
     //height_start := 0.001; height_end := 0.4; dh := 0.02; //SET HEIGHT SEQUENCE CHECK!
-    outdir := sprintf "E:/Work/Surface Evolver/afm_pyramid/data/20220823_tipangle_sym_height0_ca30/";//TA_%0.0f/",a_dev; //CHECK OUTPUT DIRECTORY
-    data_name := sprintf "data-CA_p%2.6g-TA_%0.0f",CA_p*180/pi,a_dev; //SET FILE NAME
-            
+    outdir := sprintf "E:/Work/Surface Evolver/afm_pyramid/data/20221102_pyramid_fd/TA_%0.0f/Rd_%0.1f/",tip_angle,Rs_norm; //CHECK OUTPUT DIRECTORY
+    data_name := sprintf "data-CA_p%2.6g-TA_%0.0f",CA_p*180/pi,tip_angle; //SET FILE NAME     
             quiet on;        
             printf "Contact_Radius:\tBottom_Angle:\tForce_Eng:\tForce_Calc:\tScale\n";
                
@@ -787,11 +791,11 @@ get_fd := {
             // save data            
             outname := sprintf "%s%s.txt",outdir,data_name;
             
-        if Rs == 1.0 then {printf "Contact_Radius\tHeight\tForce_Eng\tForce_Calc\t"
+        if height == 0.0 then {printf "Contact_Radius\tContact_Radius_norm\tHeight\tHeight_norm\tForce_Eng\tForce_Calc\t"
             "Bottom_Angle\tTop_Angle\tSide_Angle\tFront_Angle\tBack_Angle\tCone_Angle\tTilt_Angle\t"
             "Energy\tArea\tScale\tVolume\tPressure\tBottom_Length\t"
         "Top_Length\tBottom_Area\tTop_Area\tMean_curvature\t"
-    "Bottom_Angle_Calc\tTop_Angle6\tTop_Angle7\tTop_Angle8\tTop_Angle9\tAverage Wetted Height\tInitial_guess_height\n">> outname;} 
+    "Bottom_Angle_Calc\tTop_Angle6\tTop_Angle7\tTop_Angle8\tTop_Angle9\tAverage Wetted Height\tInitial_guess_height\ts_norm\n">> outname;} 
             else {printf "";};
 //                   printf "Contact_Radius\tHeight\tForce_Eng\tForce_Calc\t"
 //                            "Bottom_Angle\tTop_Angle\tSide_Angle\tFront_Angle\tBack_Angle\tTilt_Angle\t"
@@ -816,25 +820,25 @@ gogo5; //evolve routine
             //force2 := 0;
             compute_force; //calculate force
                 printf "%g\t%#2.3g\t%-#2.3g\t%-#2.3g\t%-#20.15g\n", 
-                        height,pin_angle*180/pi,force1,force2,scale_val;    
+                        height_norm,pin_angle*180/pi,force1,force2,scale_val;    
                     
-                dataline:= sprintf "%-#2.3g\t%-#2.6g\t%-#20.15g\t%-#20.15g\t"
+                dataline:= sprintf "%-#2.3g\t%-#2.3g\t%-#2.6g\t%-#2.6g\t%-#20.15g\t%-#20.15g\t"
                                 "%g\t%g\t%g\t%g\t%g\t%g\t%g\t"
                                 "%-#20.15g\t%-#20.15g\t"
                                 "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t"
                                 "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t"
-                                "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#2.6g\n",
-                                Rs,height,force1,force2,
-                                CA_s*180/pi,CA_p*180/pi,SA*180/pi,FA*180/pi,BA*180/pi,a_dev,tilt*180/pi,
+                                "%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#20.15g\t%-#2.6g\t%-#20.15g\n",
+                                Rs,Rs_norm,height,height_norm,force1,force2,
+                                CA_s*180/pi,CA_p*180/pi,SA*180/pi,FA*180/pi,BA*180/pi,tip_angle,tilt*180/pi,
                                 total_energy,total_area,scale_val, body[1].volume,
                                 body[1].pressure,lower_length.value, 
                                 upper_length.value,lower_area.value,upper_area.value,mean_c.value,
-                                pin_angle*180/pi,angle6,angle7,angle8,angle9,wetted_height,w_init;
+                                pin_angle*180/pi,angle6,angle7,angle8,angle9,wetted_height,w_init,s_norm;
                  /* save data */
                  printf "%s",dataline >> outname;
 
                 /* save dump file */
-                dump sprintf "%s%s_dump-Rs%0.3f.dmp",outdir,data_name,Rs;
+                dump sprintf "%s%s_dump-Rs%0.3f-height_%0.3f.dmp",outdir,data_name,Rs_norm,height_norm;
 
 //            };
             quiet off;
